@@ -1,0 +1,31 @@
+name: Verify ANGEL SUTDA source
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - feature/telegram-fees-integration
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source is present
+        run: |
+          test -f package.json || { echo "::error::Application source has not been uploaded yet"; exit 1; }
+          test -f bun.lock || { echo "::error::bun.lock missing"; exit 1; }
+      - uses: oven-sh/setup-bun@v2
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bunx tsc --noEmit
+      - name: Unit tests
+        run: bun run test
+      - name: Production build
+        run: bun run build
