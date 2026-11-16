@@ -11,6 +11,7 @@ describe("Railway isolation: no legacy Supabase endpoints or server functions",(
     expect(classifyStagingRequest("/telegram","GET")).toBe("ALLOW");
     expect(classifyStagingRequest("/api/public/railway-auth","POST")).toBe("ALLOW");
     expect(classifyStagingRequest("/api/public/railway-rooms","GET")).toBe("ALLOW");
+    expect(classifyStagingRequest("/api/public/railway-wallet","GET")).toBe("ALLOW");
     expect(classifyStagingRequest("/cards/hwatu/base/01-gwang.png","GET")).toBe("ALLOW");
     expect(classifyStagingRequest("/assets/main.js","GET")).toBe("ALLOW");
     expect(classifyStagingRequest("/","GET")).toBe("REDIRECT");
