@@ -33,3 +33,14 @@ side-pot and rake accounting, actual wallet transfers, complete owner/admin
 permissions, historical migration and end-to-end Telegram bot access remain
 separate production blockers. Do not enable payments or settlement without
 integrated real-user tests and production rollback procedures.
+
+## Deterministic persisted action ordering
+
+The PostgreSQL integration audit exposed an ordering flaw: `now()` has
+transaction-wide time semantics, so multiple test actions inserted inside one
+transaction can have identical `created_at` values. Sorting by UUID then
+scrambles turns. Migration `0006_railway_preview_turn_sequence.sql` adds a
+unique per-round `action_index`; server actions acquire the room row lock
+and store `events.length + 1`. Historical `PREVIEW_PASS` events remain
+unindexed and are read first, preserving their chronology. The rollback
+audit is mandatory before marking this engine verified.
