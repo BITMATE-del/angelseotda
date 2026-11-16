@@ -21,6 +21,7 @@ describe("Railway staging round preparation safety limits", () => {
     expect(canPrepareRound(2.5, "SUTDA2")).toBe(false);
     expect(canPrepareRound(-1, "SUTDA3")).toBe(false);
     expect(canPrepareRound(11, "SUTDA2")).toBe(false);
-    expect(canPrepareRound(10, "SUTDA3")).toBe(true);
+    expect(canPrepareRound(10, "SUTDA3")).toBe(false);
+    expect(canPrepareRound(6, "SUTDA3")).toBe(true);
   });
 });
