@@ -77,6 +77,19 @@ try {
   `;
   if(choices.length!==1 || choiceTable[0]?.['n']!==1)
     throw new Error("FINAL_CHOICES_SCHEMA_MISSING");
+  const actionSequence = await db`
+    select count(*)::integer as n from information_schema.columns
+    where table_schema='public' and table_name='angel_game_actions'
+      and column_name='action_index'
+  `;
+  const sequenceMigration = await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0006_preview_turn_sequence'
+  `;
+  if(Number(actionSequence[0]?.['n'])!==1 ||
+     Number(sequenceMigration[0]?.['n'])!==1)
+    throw new Error("PREVIEW_TURN_SEQUENCE_MISSING");
+  console.log("PREVIEW_TURN_SEQUENCE_OK");
   console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
   console.log("ANGEL_TABLE_COUNT=16");
