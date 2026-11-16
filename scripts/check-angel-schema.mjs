@@ -23,7 +23,7 @@ try {
                   'payments_enabled','settlement_enabled')
   `;
   const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
-  if (tables[0]?.total !== 15
+  if (tables[0]?.total !== 16
     || Number(map.deposit_fee_rate) !== 0
     || Number(map.withdrawal_fee_rate) !== 0
     || Number(map.pot_rake_rate) !== 0.03
@@ -67,9 +67,19 @@ try {
   `;
   if(Number(unsafeRuntime[0]?.['n'])!==0 || Number(unsafeReceipt[0]?.['n'])!==0)
     throw new Error("UNSAFE_BETTING_ENABLED");
+  const choices=await db`
+    select version from public.angel_schema_migrations
+    where version='0005_final_hand_selections'
+  `;
+  const choiceTable=await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name='angel_round_final_selections'
+  `;
+  if(choices.length!==1 || choiceTable[0]?.['n']!==1)
+    throw new Error("FINAL_CHOICES_SCHEMA_MISSING");
   console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
-  console.log("ANGEL_TABLE_COUNT=15");
+  console.log("ANGEL_TABLE_COUNT=16");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
 } catch(e) {
   console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
