@@ -7,6 +7,8 @@
  * return the same round. No browser-provided player list is trusted.
  */
 import postgres from "postgres";
+import { randomInt } from "node:crypto";
+import { SUTDA_CARDS } from "@/data/sutdaCards";
 import { isRoomUuid } from "./rooms.server";
 
 let pool: ReturnType<typeof postgres> | undefined;
@@ -26,7 +28,7 @@ export const MAX_DORI_PLAYERS = 4;
 export function canPrepareRound(count: number, mode: string) {
   return Number.isInteger(count) &&
     count >= MIN_PREPARE_PLAYERS &&
-    count <= (mode === "DORI" ? MAX_DORI_PLAYERS : 10);
+    count <= (mode === "DORI" ? MAX_DORI_PLAYERS : mode === "SUTDA3" ? 6 : mode === "SUTDA2" ? 10 : 0);
 }
 
 /**
@@ -49,7 +51,7 @@ export async function prepareStagingRound(accountId: string, roomId: string) {
     const existing = await tx`
       select id, round_number, phase
       from public.angel_rounds
-      where room_id=${roomId}::uuid and phase='PREPARING'
+      where room_id=${roomId}::uuid and phase in ('PREPARING','DEALT_PREVIEW')
         and settlement_status='PENDING'
       order by round_number desc limit 1
     `;
@@ -101,7 +103,7 @@ export async function getStagingPreparedRound(accountId: string, roomId: string)
     from public.angel_rounds r
     join public.angel_room_seats seat
       on seat.room_id=r.room_id and seat.account_id=${accountId}::uuid
-    where r.room_id=${roomId}::uuid and r.phase='PREPARING'
+    where r.room_id=${roomId}::uuid and r.phase in ('PREPARING','DEALT_PREVIEW')
       and r.settlement_status='PENDING'
     order by r.round_number desc limit 1
   `;
@@ -111,4 +113,127 @@ export async function getStagingPreparedRound(accountId: string, roomId: string)
     roundNumber:Number(row['round_number']),
     playerCount:Number(row['players']), pot:String(row['pot']),
     realGameStarted:false };
+}
+
+
+/**
+ * Pure CSPRNG Fisher-Yates. Never use Math.random for card allocation.
+ * This uses the original 20-card manifest; no cards are generated client-side.
+ */
+export function cryptographicShuffle(ids: readonly string[], roll: (max: number) => number = randomInt): string[] {
+  const out = [...ids];
+  for (let i=out.length-1;i>0;i--) {
+    const j = roll(i+1);
+    if (!Number.isInteger(j) || j<0 || j>i) throw new Error("INVALID_RANDOM_INDEX");
+    [out[i],out[j]]=[out[j]!,out[i]!];
+  }
+  return out;
+}
+
+export function dealPrivateHands(mode: string, seatNumbers: readonly number[]) {
+  if (!canPrepareRound(seatNumbers.length, mode) ||
+      new Set(seatNumbers).size !== seatNumbers.length)
+    throw new Error("INVALID_PLAYER_COUNT");
+  const perPlayer = mode === "DORI" ? 5 : mode === "SUTDA3" ? 3 : 2;
+  const deck = cryptographicShuffle(SUTDA_CARDS.map(c => c.id));
+  if (seatNumbers.length*perPlayer > deck.length) throw new Error("DECK_CAPACITY_EXCEEDED");
+  const hands: Array<{ seat:number; cards:string[] }> = seatNumbers.map(seat => ({seat,cards:[]}));
+  let index=0;
+  for (let card=0;card<perPlayer;card++) {
+    for (const hand of hands) hand.cards.push(deck[index++]!);
+  }
+  return hands;
+}
+
+/**
+ * Owner may generate ONE preview deal for a prepared round.
+ * Row-level room lock serializes repeated clicks and never changes balances.
+ * Cards are written into a dedicated private DB table, never returned here.
+ */
+export async function dealStagingRound(accountId:string,roomId:string) {
+  if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
+  const sql=db();
+  return sql.begin(async tx => {
+    const rooms=await tx`
+      select id, owner_id, mode, status from public.angel_rooms
+      where id=${roomId}::uuid for update
+    `;
+    const room=rooms[0];
+    if (!room || room['status']!=="WAITING") throw new Error("ROOM_UNAVAILABLE");
+    if (String(room['owner_id'])!==accountId) throw new Error("OWNER_ONLY");
+    const rounds=await tx`
+      select id, round_number, phase from public.angel_rounds
+      where room_id=${roomId}::uuid and phase in ('PREPARING','DEALT_PREVIEW')
+        and settlement_status='PENDING'
+      order by round_number desc limit 1 for update
+    `;
+    const round=rounds[0];
+    if (!round) throw new Error("ROUND_NOT_PREPARED");
+    const roundId=String(round['id']);
+    if (round['phase']==="DEALT_PREVIEW") return {
+      roundId, roundNumber:Number(round['round_number']), reused:true,
+      realGameStarted:false,
+    };
+    const seats=await tx`
+      select p.account_id,p.seat_number from public.angel_round_players p
+      join public.angel_accounts a on a.id=p.account_id
+      where p.round_id=${roundId}::uuid and a.status='ACTIVE'
+      order by p.seat_number
+    `;
+    if (!canPrepareRound(seats.length,String(room['mode'])))
+      throw new Error("INVALID_PLAYER_COUNT");
+    const allocation=dealPrivateHands(String(room['mode']),seats.map(s=>Number(s['seat_number'])));
+    for (let i=0;i<seats.length;i++) {
+      const row=seats[i]!,hand=allocation[i]!;
+      await tx`
+        insert into public.angel_round_private_hands(round_id,account_id,card_ids)
+        values (${roundId}::uuid,${String(row['account_id'])}::uuid,${tx.json(hand.cards)})
+      `;
+    }
+    const initialSeat=Number(seats[0]?.['seat_number']);
+    await tx`
+      insert into public.angel_round_runtime(round_id,turn_seat,accepts_bets)
+      values (${roundId}::uuid,${initialSeat},false)
+    `;
+    await tx`
+      update public.angel_rounds set phase='DEALT_PREVIEW'
+      where id=${roundId}::uuid and phase='PREPARING'
+    `;
+    return { roundId, roundNumber:Number(round['round_number']),
+      reused:false,realGameStarted:false };
+  });
+}
+
+/**
+ * Read view: reveal ONLY requester's own cards, never an opponent's hand.
+ * Return seat numbers and face-down counts to authorized round participants.
+ */
+export async function getOwnPreviewCards(accountId:string,roomId:string) {
+  if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
+  const sql=db();
+  const rows=await sql`
+    select r.id,r.phase,rt.turn_seat,p.seat_number,
+      h.card_ids as own_cards,
+      (select count(*)::integer from public.angel_round_players other
+       where other.round_id=r.id) as players
+    from public.angel_rounds r
+    join public.angel_round_players p on p.round_id=r.id
+      and p.account_id=${accountId}::uuid
+    join public.angel_round_runtime rt on rt.round_id=r.id
+    join public.angel_round_private_hands h on h.round_id=r.id
+      and h.account_id=${accountId}::uuid
+    where r.room_id=${roomId}::uuid and r.phase='DEALT_PREVIEW'
+      and r.settlement_status='PENDING'
+    order by r.round_number desc limit 1
+  `;
+  const row=rows[0];
+  if (!row) return null;
+  const cards=row['own_cards'];
+  if (!Array.isArray(cards) || !cards.every(c=>typeof c==="string"))
+    throw new Error("PRIVATE_HAND_CORRUPT");
+  return {roundId:String(row['id']),phase:"DEALT_PREVIEW" as const,
+    mySeat:Number(row['seat_number']),turnSeat:Number(row['turn_seat']),
+    myCards:cards as string[],
+    playerCount:Number(row['players']),acceptsBets:false,
+    realGameStarted:false};
 }
