@@ -44,3 +44,12 @@ unique per-round `action_index`; server actions acquire the room row lock
 and store `events.length + 1`. Historical `PREVIEW_PASS` events remain
 unindexed and are read first, preserving their chronology. The rollback
 audit is mandatory before marking this engine verified.
+
+## Railway staging DB audit launch gate
+
+After migration 0006 has been installed, the pre-deploy audit
+`bun scripts/audit-railway-preview-turns.mjs` must report both
+`PREVIEW_TURN_DB_AUDIT_PASS` and `PREVIEW_TURN_ROLLBACK_VERIFIED`.
+The ordinary pre-deploy command must then be restored to
+`bun scripts/check-angel-schema.mjs` so production-like deployments
+only read and validate schema state.
