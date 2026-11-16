@@ -50,6 +50,9 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  // The Railway-only Telegram preview must not call Supabase Auth at all.
+  // Keep legacy middleware unchanged for the currently operating non-staging build.
+  functionMiddleware: import.meta.env["VITE_RAILWAY_TELEGRAM_PREVIEW"] === "true"
+    ? [] : [attachSupabaseAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware, securityHeadersMiddleware],
 }));
