@@ -25,6 +25,7 @@ interface PrivatePreview {
   acceptsBets: false; passes: number; didPass: boolean;
   previewComplete: boolean; realGameStarted: false;
 }
+interface MyFinalChoice { mode:string;selected:string[];previewOnly:true; }
 interface BetDryRun {
   previewOnly: true; canExecute: false; monetaryEffects: false;
   isMyTurn: boolean;
@@ -49,6 +50,8 @@ export function RailwayTelegramPreview() {
   const [preparedRound, setPreparedRound] = useState<PreparedRound | null>(null);
   const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
   const [betPreview, setBetPreview] = useState<BetDryRun | null>(null);
+  const [finalChoice,setFinalChoice] = useState<MyFinalChoice | null>(null);
+  const [chosenCards,setChosenCards] = useState<string[]>([]);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
   const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
@@ -132,17 +135,22 @@ export function RailwayTelegramPreview() {
       const data = await response.json() as {
         room: PreviewRoomDetail; preparedRound: PreparedRound | null;
         privatePreview: PrivatePreview | null; betPreview: BetDryRun | null;
+        finalChoice: MyFinalChoice | null;
       };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
       setPrivatePreview(data.privatePreview);
       setBetPreview(data.betPreview);
+      setFinalChoice(data.finalChoice);
+      setChosenCards(data.finalChoice?.selected ?? []);
       setSelectedRoomId(roomId);
     } catch (error) {
       setRoomDetail(null);
       setPreparedRound(null);
       setPrivatePreview(null);
       setBetPreview(null);
+      setFinalChoice(null);
+      setChosenCards([]);
       setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
   }
@@ -173,6 +181,8 @@ export function RailwayTelegramPreview() {
         setPreparedRound(null);
         setPrivatePreview(null);
         setBetPreview(null);
+        setFinalChoice(null);
+        setChosenCards([]);
       } else if (payload['action'] === "join" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
       } else if (payload['action'] === "create" && data.roomId) {
@@ -192,6 +202,30 @@ export function RailwayTelegramPreview() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function submitFinalHand() {
+    if(busy || !selectedRoomId || finalChoice || !roomDetail) return;
+    setBusy(true);
+    try{
+      const response=await fetch("/api/public/railway-rooms",{
+        method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"content-type":"application/json"},
+        body:JSON.stringify({action:"chooseFinal",roomId:selectedRoomId,chosen:chosenCards}),
+      });
+      if(!response.ok)throw new Error("선택한 패를 확인할 수 없습니다. 카드 선택을 확인해 주세요.");
+      await refreshRoomDetail(selectedRoomId);
+      setLobbyMessage("최종 패 선택이 서버에 저장됐습니다. 실제 정산은 진행되지 않습니다.");
+    }catch(error){
+      setLobbyMessage(error instanceof Error?error.message:"최종 패 선택 실패");
+    }finally{setBusy(false);}
+  }
+
+  function toggleFinalCard(cardId:string){
+    if(finalChoice || !roomDetail)return;
+    const max=roomDetail.mode==="DORI"?3:2;
+    setChosenCards(old=>old.includes(cardId)?old.filter(x=>x!==cardId):
+      old.length<max?[...old,cardId]:old);
   }
 
   async function signOut() {
@@ -329,6 +363,34 @@ export function RailwayTelegramPreview() {
                       <p className="text-xs text-muted-foreground">
                         다른 회원 카드는 공개되지 않습니다. 베팅과 정산은 비활성화되어 있습니다.
                       </p>
+                      {(roomDetail.mode==="SUTDA3" || roomDetail.mode==="DORI") && (
+                        <div className="space-y-2 rounded-lg border border-white/10 p-2">
+                          <p className="text-xs font-semibold">
+                            {roomDetail.mode==="SUTDA3"?"승부패 2장 선택":"짓기 3장 선택"}
+                          </p>
+                          {finalChoice ? (
+                            <p role="status" className="text-xs">
+                              최종 선택 저장됨: {finalChoice.selected.join(", ")}
+                            </p>
+                          ) : (
+                            <>
+                              <div className="flex flex-wrap gap-2">
+                                {privatePreview.myCards.map(id=>(
+                                  <button key={id} type="button"
+                                    aria-pressed={chosenCards.includes(id)}
+                                    className={`rounded border px-2 py-1 text-xs ${chosenCards.includes(id)?"border-amber-300":"border-white/20"}`}
+                                    onClick={()=>toggleFinalCard(id)}>{id}</button>
+                                ))}
+                              </div>
+                              <Button variant="gold" disabled={busy ||
+                                chosenCards.length!==(roomDetail.mode==="DORI"?3:2)}
+                                onClick={()=>void submitFinalHand()} className="w-full">
+                                최종 패 확정 (정산 없음)
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
                       {betPreview && (
                         <div className="space-y-2 rounded-lg border border-white/10 p-2">
                           <p className="text-xs font-semibold">베팅 금액 계산 시험 · 실제 차감 없음</p>
