@@ -72,7 +72,7 @@ export async function createStagingRoom(accountId: string, mode: RoomMode, title
 }
 
 export async function joinStagingRoom(accountId: string, roomId: string) {
-  if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(roomId)) throw new Error("INVALID_ROOM");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomId)) throw new Error("INVALID_ROOM");
   const sql = db();
   return sql.begin(async tx => {
     // Serializes seat assignment for one room.
