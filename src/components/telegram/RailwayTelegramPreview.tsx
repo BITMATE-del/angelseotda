@@ -175,7 +175,8 @@ export function RailwayTelegramPreview() {
       setFinalChoice(data.finalChoice);
       setOutcome(data.outcome);
       setTurnStatus(data.turnStatus);
-      setChosenCards(data.finalChoice?.selected ?? []);
+      // Polling must not erase an unsubmitted local final-hand choice.
+      if (data.finalChoice) setChosenCards(data.finalChoice.selected);
       setSelectedRoomId(roomId);
     } catch (error) {
       setRoomDetail(null);
@@ -194,6 +195,18 @@ export function RailwayTelegramPreview() {
     if (screen !== "ready") return;
     void refreshRooms();
   }, [screen]);
+
+  // Keep every participant's turn, folds, final choice and winner preview
+  // synchronized without trusting client-side game state.
+  useEffect(() => {
+    if(screen!=="ready" || !selectedRoomId) return;
+    const timer=window.setInterval(()=>{
+      if(!document.hidden && !busy)void refreshRoomDetail(selectedRoomId);
+    },5000);
+    return ()=>window.clearInterval(timer);
+  },[screen,selectedRoomId,busy]);
+
+  useEffect(()=>{setChosenCards([]);},[selectedRoomId]);
 
   async function roomAction(payload: Record<string, string>) {
     if (busy) return;
