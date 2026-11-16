@@ -57,6 +57,17 @@ try {
   `;
   if (receiptSchema.length!==1 || receiptTable[0]?.['n']!==1)
     throw new Error("SANDBOX_RECEIPT_SCHEMA_MISSING");
+  const unsafeRuntime=await db`
+    select count(*)::integer as n from public.angel_round_runtime
+    where accepts_bets=true
+  `;
+  const unsafeReceipt=await db`
+    select count(*)::integer as n from public.angel_bet_receipts
+    where action<>'SANDBOX_DEBIT'
+  `;
+  if(Number(unsafeRuntime[0]?.['n'])!==0 || Number(unsafeReceipt[0]?.['n'])!==0)
+    throw new Error("UNSAFE_BETTING_ENABLED");
+  console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
   console.log("ANGEL_TABLE_COUNT=15");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
