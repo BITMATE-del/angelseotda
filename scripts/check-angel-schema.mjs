@@ -23,7 +23,7 @@ try {
                   'payments_enabled','settlement_enabled')
   `;
   const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
-  if (tables[0]?.total !== 12
+  if (tables[0]?.total !== 14
     || Number(map.deposit_fee_rate) !== 0
     || Number(map.withdrawal_fee_rate) !== 0
     || Number(map.pot_rake_rate) !== 0.03
@@ -36,8 +36,19 @@ try {
     where version='0002_telegram_sessions'
   `;
   if (session.length !== 1) throw new Error("SESSION_SCHEMA_NOT_APPLIED");
+  const privateSchema = await db`
+    select version from public.angel_schema_migrations
+    where version='0003_private_preview_deals'
+  `;
+  if (privateSchema.length !== 1) throw new Error("PRIVATE_DEALS_SCHEMA_NOT_APPLIED");
+  const privateTables = await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name in
+      ('angel_round_private_hands','angel_round_runtime')
+  `;
+  if (privateTables[0]?.['n'] !== 2) throw new Error("PRIVATE_TABLES_MISSING");
   console.log("ANGEL_BASELINE_OK");
-  console.log("ANGEL_TABLE_COUNT=12");
+  console.log("ANGEL_TABLE_COUNT=14");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
 } catch(e) {
   console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
