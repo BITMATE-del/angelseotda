@@ -41,7 +41,14 @@ export async function chooseFinalHand(
   accountId:string,roomId:string,chosen:readonly string[]
 ) {
   if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
-  return db().begin(async tx=>{
+  return db().begin(tx=>applyFinalChoice(tx,accountId,roomId,chosen));
+}
+
+/** Transaction-injectable core for rollback-only PostgreSQL integration tests. */
+export async function applyFinalChoice(
+  tx:postgres.TransactionSql,accountId:string,roomId:string,chosen:readonly string[]
+){
+  if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
     const rooms=await tx`
       select id,mode,status from public.angel_rooms
       where id=${roomId}::uuid for update
@@ -85,7 +92,6 @@ export async function chooseFinalHand(
     `;
     return {roundId,selected:verified.selected,handName:verified.handName,
       reused:false,previewOnly:true};
-  });
 }
 
 /** Only reveal the caller's saved selection. Never return other players' cards. */
