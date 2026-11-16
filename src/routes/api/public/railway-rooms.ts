@@ -17,9 +17,9 @@ async function caller(request: Request) {
 }
 function failure(error: unknown) {
   const reason = error instanceof Error ? error.message : "";
-  if (["INVALID_ROOM_INPUT", "INVALID_ROOM", "INVALID_REQUEST_ID"].includes(reason))
+  if (["INVALID_ROOM_INPUT", "INVALID_ROOM", "INVALID_REQUEST_ID", "INVALID_FINAL_CHOICE", "INVALID_FINAL_MODE", "INVALID_DORI_MAKE"].includes(reason))
     return json({ error: reason }, 400);
-  if (["ROOM_FULL", "ROOM_UNAVAILABLE", "NOT_IN_ROOM", "ROUND_ALREADY_PREPARED", "INVALID_PLAYER_COUNT", "ROUND_NOT_PREPARED", "INACTIVE_PLAYER", "ROUND_NOT_DEALT", "NOT_IN_ROUND", "NOT_YOUR_TURN", "INVALID_PREVIEW_TURN_STATE", "REQUEST_ID_CONFLICT"].includes(reason))
+  if (["ROOM_FULL", "ROOM_UNAVAILABLE", "NOT_IN_ROOM", "ROUND_ALREADY_PREPARED", "INVALID_PLAYER_COUNT", "ROUND_NOT_PREPARED", "INACTIVE_PLAYER", "ROUND_NOT_DEALT", "NOT_IN_ROUND", "NOT_YOUR_TURN", "INVALID_PREVIEW_TURN_STATE", "REQUEST_ID_CONFLICT", "FINAL_CHOICE_LOCKED", "FINAL_CHOICE_NOT_REQUIRED"].includes(reason))
     return json({ error: reason }, 409);
   if (reason === "OWNER_ONLY") return json({ error: "OWNER_ONLY" }, 403);
   if (reason === "NOT_AUTHORIZED") return json({ error: "UNAUTHORIZED" }, 401);
@@ -53,9 +53,12 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
               const { getBettingDryRun } = await import("@/lib/railway/bettingPreview.server");
               betPreview = await getBettingDryRun(account.id, roomId);
             }
+            const { readOwnFinalChoice } = await import("@/lib/railway/finalChoices.server");
+            const finalChoice = privatePreview
+              ? await readOwnFinalChoice(account.id, roomId) : null;
             return json({ room: await getStagingRoomDetail(account.id, roomId),
               preparedRound: await getStagingPreparedRound(account.id, roomId),
-              privatePreview, betPreview });
+              privatePreview, betPreview, finalChoice });
           }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
@@ -111,6 +114,16 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
             const { passPreviewTurn } = await import("@/lib/railway/rounds.server");
             return json({ ok: true,
               ...(await passPreviewTurn(account.id, body['roomId'], body['requestId'])) });
+          }
+          if (body['action'] === "chooseFinal") {
+            if (typeof body['roomId'] !== "string" ||
+                !Array.isArray(body['chosen']) ||
+                !body['chosen'].every(x => typeof x === "string") ||
+                body['chosen'].length > 3)
+              return json({ error: "INVALID_FINAL_CHOICE" }, 400);
+            const { chooseFinalHand } = await import("@/lib/railway/finalChoices.server");
+            return json({ok:true,
+              ...(await chooseFinalHand(account.id,body['roomId'],body['chosen']))});
           }
           if (body['action'] === "leave") {
             if (typeof body['roomId'] !== "string")
