@@ -1,0 +1,354 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ANGEL SUTDA design system.
+ * Deep black / charcoal / dark navy / dark brown base with gold + red accents.
+ * Never hardcode colors in components — use these semantic tokens.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  /* 한글 글리프 fallback: Black Han Sans 로드 실패/글리프 미보유 시에도
+     실제 로드되는 Noto Sans KR → OS 한글 폰트로 이어져 네모(tofu)가 나오지 않게 한다. */
+  --font-display:
+    "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
+    system-ui, sans-serif;
+  --font-serif:
+    "Noto Serif KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
+  --font-sans:
+    "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui, sans-serif;
+
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
+  --color-crimson: var(--crimson);
+  --color-crimson-deep: var(--crimson-deep);
+  --color-wood: var(--wood);
+  --color-wood-dark: var(--wood-dark);
+  --color-felt: var(--felt);
+  --color-felt-deep: var(--felt-deep);
+  --color-charcoal: var(--charcoal);
+  --color-navy: var(--navy);
+  --color-jade: var(--jade);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  --background: oklch(0.16 0.012 60);
+  --foreground: oklch(0.94 0.012 85);
+
+  --card: oklch(0.21 0.015 62);
+  --card-foreground: oklch(0.94 0.012 85);
+  --popover: oklch(0.19 0.014 62);
+  --popover-foreground: oklch(0.94 0.012 85);
+
+  --primary: oklch(0.78 0.13 84);
+  --primary-foreground: oklch(0.16 0.02 60);
+  --secondary: oklch(0.26 0.018 62);
+  --secondary-foreground: oklch(0.93 0.01 85);
+  --muted: oklch(0.24 0.014 62);
+  --muted-foreground: oklch(0.68 0.02 80);
+  --accent: oklch(0.3 0.03 60);
+  --accent-foreground: oklch(0.94 0.012 85);
+  --destructive: oklch(0.52 0.19 27);
+  --destructive-foreground: oklch(0.96 0.01 85);
+
+  --border: oklch(0.32 0.028 68);
+  --input: oklch(0.28 0.02 64);
+  --ring: oklch(0.78 0.13 84);
+
+  --gold: oklch(0.82 0.13 85);
+  --gold-soft: oklch(0.9 0.08 92);
+  --gold-deep: oklch(0.6 0.11 78);
+  --crimson: oklch(0.55 0.2 24);
+  --crimson-deep: oklch(0.38 0.16 25);
+  --wood: oklch(0.36 0.06 52);
+  --wood-dark: oklch(0.24 0.045 48);
+  --felt: oklch(0.28 0.05 245);
+  --felt-deep: oklch(0.19 0.045 250);
+  --charcoal: oklch(0.2 0.008 60);
+  --navy: oklch(0.24 0.05 255);
+  --jade: oklch(0.5 0.11 160);
+  --panel: oklch(0.19 0.014 62);
+  --panel-foreground: oklch(0.92 0.012 85);
+
+  --chart-1: oklch(0.82 0.13 85);
+  --chart-2: oklch(0.55 0.2 24);
+  --chart-3: oklch(0.6 0.11 240);
+  --chart-4: oklch(0.62 0.12 160);
+  --chart-5: oklch(0.7 0.09 300);
+
+  --sidebar: oklch(0.18 0.013 62);
+  --sidebar-foreground: oklch(0.92 0.012 85);
+  --sidebar-primary: oklch(0.82 0.13 85);
+  --sidebar-primary-foreground: oklch(0.16 0.02 60);
+  --sidebar-accent: oklch(0.26 0.018 62);
+  --sidebar-accent-foreground: oklch(0.93 0.01 85);
+  --sidebar-border: oklch(0.3 0.025 66);
+  --sidebar-ring: oklch(0.82 0.13 85);
+
+  /* composite tokens */
+  --gradient-gold: linear-gradient(
+    155deg,
+    oklch(0.93 0.08 95),
+    oklch(0.82 0.14 85) 42%,
+    oklch(0.55 0.1 72)
+  );
+  --gradient-crimson: linear-gradient(160deg, oklch(0.5 0.2 25), oklch(0.3 0.14 26));
+  --gradient-panel: linear-gradient(170deg, oklch(0.23 0.017 62), oklch(0.16 0.012 60));
+  --gradient-rail: linear-gradient(
+    180deg,
+    oklch(0.44 0.07 55),
+    oklch(0.3 0.055 50) 45%,
+    oklch(0.2 0.04 46)
+  );
+  --gradient-felt: radial-gradient(
+    ellipse 70% 78% at 50% 40%,
+    oklch(0.33 0.055 243),
+    oklch(0.22 0.05 248) 55%,
+    oklch(0.15 0.04 252)
+  );
+  --shadow-table: 0 40px 90px -30px oklch(0 0 0 / 0.85), inset 0 2px 30px oklch(0 0 0 / 0.55);
+  --shadow-panel: 0 18px 40px -24px oklch(0 0 0 / 0.9);
+  --shadow-gold: 0 0 0 1px oklch(0.82 0.13 85 / 0.4), 0 0 24px oklch(0.82 0.13 85 / 0.28);
+  --glow-gold: 0 0 18px oklch(0.85 0.13 88 / 0.6);
+  --glow-crimson: 0 0 18px oklch(0.55 0.2 24 / 0.6);
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.3 0.04 60 / 0.5), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, oklch(0.25 0.05 250 / 0.45), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+}
+
+@utility text-gold-plate {
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility panel-surface {
+  background: var(--gradient-panel);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-panel);
+}
+
+@utility gold-frame {
+  border: 1px solid oklch(0.82 0.13 85 / 0.45);
+  box-shadow: var(--shadow-gold);
+}
+
+@utility table-rail {
+  background: var(--gradient-rail);
+  box-shadow: var(--shadow-table);
+}
+
+@utility table-felt {
+  background: var(--gradient-felt);
+}
+
+@utility turn-glow {
+  box-shadow:
+    0 0 0 2px var(--color-gold),
+    var(--glow-gold);
+}
+
+@utility win-glow {
+  box-shadow:
+    0 0 0 3px var(--color-gold),
+    0 0 34px oklch(0.85 0.13 88 / 0.85);
+}
+
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: translate(0, -140px) scale(0.6) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes flip-open {
+  from {
+    transform: rotateY(90deg);
+    opacity: 0.2;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-gold {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px oklch(0.82 0.13 85 / 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px oklch(0.88 0.13 88 / 0.95),
+      0 0 30px oklch(0.85 0.13 88 / 0.7);
+  }
+}
+
+@keyframes rise-fade {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility animate-deal {
+  animation: deal-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@utility animate-flip {
+  animation: flip-open 0.4s ease-out both;
+}
+
+@utility animate-turn {
+  animation: pulse-gold 1.6s ease-in-out infinite;
+}
+
+@utility animate-result {
+  animation: rise-fade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* 닉네임 효과 아이템 장착 시 사용하는 골드 그라데이션 + 글로우 */
+@utility name-glow {
+  background: linear-gradient(
+    100deg,
+    var(--gold-soft) 0%,
+    var(--gold) 35%,
+    #fff6cf 50%,
+    var(--gold) 65%,
+    var(--gold-soft) 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 6px var(--gold)) drop-shadow(0 0 2px oklch(0 0 0 / 0.9));
+  animation: name-shimmer 3.2s linear infinite;
+}
+
+@keyframes name-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 260% 0;
+  }
+}
+
+
+/* 도리 POT 코인 반응 — 판돈 상승 시 최소한의 동적 연출 */
+@keyframes dori-coin-bounce {
+  0% { transform: translate(-50%, 0) scale(1); }
+  35% { transform: translate(-50%, -10px) scale(1.06); }
+  70% { transform: translate(-50%, 2px) scale(0.99); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+.animate-dori-coin {
+  animation: dori-coin-bounce 620ms ease-out;
+  filter: drop-shadow(0 0 16px rgba(255, 214, 110, 0.65));
+}
+
+/* 도리 POT 금액 상승 시 짧은 shine sweep */
+@keyframes dori-shine {
+  0% { transform: translateX(-120%); opacity: 0; }
+  25% { opacity: 0.85; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+.animate-dori-shine {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 245, 210, 0.45) 48%,
+    transparent 76%
+  );
+  animation: dori-shine 720ms ease-out;
+}

@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.game_round_players_selection_guard() FROM anon, authenticated;

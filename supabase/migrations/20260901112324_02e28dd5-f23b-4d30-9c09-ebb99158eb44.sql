@@ -1,0 +1,11 @@
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public' AND p.prosecdef
+       AND p.proname NOT IN ('ops_status','username_available','handle_new_user')
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM anon', r.sig);
+  END LOOP;
+END $$;

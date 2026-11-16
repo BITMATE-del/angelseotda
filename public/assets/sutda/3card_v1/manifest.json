@@ -1,0 +1,286 @@
+{
+  "source": "a_high_resolution_flat_clean_ui_asset_pack_image.png",
+  "count": 40,
+  "assets": [
+    {
+      "name": "sutda_table_bg.png",
+      "size": [
+        448,
+        216
+      ]
+    },
+    {
+      "name": "sutda_logo.png",
+      "size": [
+        230,
+        216
+      ]
+    },
+    {
+      "name": "sutda_pot_frame.png",
+      "size": [
+        258,
+        216
+      ]
+    },
+    {
+      "name": "sutda_seat_number_badges.png",
+      "size": [
+        273,
+        81
+      ]
+    },
+    {
+      "name": "sutda_dealer_badge.png",
+      "size": [
+        120,
+        131
+      ]
+    },
+    {
+      "name": "sutda_turn_badge.png",
+      "size": [
+        151,
+        131
+      ]
+    },
+    {
+      "name": "sutda_seat_self_2card.png",
+      "size": [
+        374,
+        155
+      ]
+    },
+    {
+      "name": "sutda_seat_opponent_2card.png",
+      "size": [
+        386,
+        155
+      ]
+    },
+    {
+      "name": "sutda_seat_empty.png",
+      "size": [
+        254,
+        155
+      ]
+    },
+    {
+      "name": "sutda_status_waiting.png",
+      "size": [
+        123,
+        50
+      ]
+    },
+    {
+      "name": "sutda_status_ready.png",
+      "size": [
+        121,
+        50
+      ]
+    },
+    {
+      "name": "sutda_status_playing.png",
+      "size": [
+        131,
+        50
+      ]
+    },
+    {
+      "name": "sutda_status_turn.png",
+      "size": [
+        125,
+        51
+      ]
+    },
+    {
+      "name": "sutda_status_fold.png",
+      "size": [
+        124,
+        51
+      ]
+    },
+    {
+      "name": "sutda_status_allin.png",
+      "size": [
+        131,
+        51
+      ]
+    },
+    {
+      "name": "sutda_status_disconnected.png",
+      "size": [
+        135,
+        49
+      ]
+    },
+    {
+      "name": "sutda_btn_fold.png",
+      "size": [
+        109,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_check.png",
+      "size": [
+        114,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_call.png",
+      "size": [
+        116,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_ping.png",
+      "size": [
+        112,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_ddadang.png",
+      "size": [
+        114,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_quarter.png",
+      "size": [
+        114,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_half.png",
+      "size": [
+        115,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_allin.png",
+      "size": [
+        116,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_sound.png",
+      "size": [
+        80,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_fullscreen.png",
+      "size": [
+        116,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_mode.png",
+      "size": [
+        112,
+        75
+      ]
+    },
+    {
+      "name": "sutda_btn_exit.png",
+      "size": [
+        117,
+        75
+      ]
+    },
+    {
+      "name": "sutda_stage_progress.png",
+      "size": [
+        384,
+        99
+      ]
+    },
+    {
+      "name": "sutda_chat_tabs.png",
+      "size": [
+        320,
+        99
+      ]
+    },
+    {
+      "name": "sutda_chat_panel.png",
+      "size": [
+        298,
+        132
+      ]
+    },
+    {
+      "name": "sutda_rank_badges.png",
+      "size": [
+        438,
+        132
+      ]
+    },
+    {
+      "name": "sutda_result_win.png",
+      "size": [
+        143,
+        77
+      ]
+    },
+    {
+      "name": "sutda_result_lose.png",
+      "size": [
+        146,
+        77
+      ]
+    },
+    {
+      "name": "sutda_result_rematch.png",
+      "size": [
+        144,
+        77
+      ]
+    },
+    {
+      "name": "sutda_foldwin_choice.png",
+      "size": [
+        353,
+        112
+      ]
+    },
+    {
+      "name": "sutda_deco_corner.png",
+      "size": [
+        117,
+        113
+      ]
+    },
+    {
+      "name": "sutda_deco_line.png",
+      "size": [
+        178,
+        113
+      ]
+    },
+    {
+      "name": "sutda_deco_flower.png",
+      "size": [
+        138,
+        113
+      ]
+    },
+    {
+      "name": "sutda_deco_circle.png",
+      "size": [
+        151,
+        113
+      ]
+    }
+  ]
+}

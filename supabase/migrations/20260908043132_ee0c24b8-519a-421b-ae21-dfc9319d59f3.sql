@@ -1,0 +1,2 @@
+ALTER TABLE public.dori_rounds DROP CONSTRAINT dori_rounds_settlement_chk;
+ALTER TABLE public.dori_rounds ADD CONSTRAINT dori_rounds_settlement_chk CHECK (settlement_status = ANY (ARRAY['PENDING'::text,'DONE'::text,'FAILED'::text,'REMATCH'::text]));

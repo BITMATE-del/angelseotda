@@ -1,0 +1,1 @@
+delete from public.signup_failure_logs where username = 'angeladmin';

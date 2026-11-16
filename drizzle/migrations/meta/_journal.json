@@ -1,0 +1,307 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789359733351,
+      "tag": "0000_fix_sutda3_first_betting_fold_win_settle",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789364997925,
+      "tag": "0001_admin_abandoned_round_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789365174137,
+      "tag": "0002_admin_release_closed_room_seats",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789366889513,
+      "tag": "0003_harden_chat_actions_rls_and_revoke_anon_admin_rpc",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789366945047,
+      "tag": "0004_revoke_public_execute_admin_rpc",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789374600358,
+      "tag": "0005_dori_remaining_pair_uses_sutda_evaluator",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789374821086,
+      "tag": "0006_dori_eval_pair_cards_security_definer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789376391293,
+      "tag": "0007_dori_final_tie_comparator_make_total",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789379149141,
+      "tag": "0008_custom_profile_feature",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789379196521,
+      "tag": "0009_custom_profiles_storage_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789380961927,
+      "tag": "0010_custom_profile_admin_log_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789381556710,
+      "tag": "0011_custom_profile_admin_audit_direct",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789439075252,
+      "tag": "0012_prevent_last_player_timeout_fold_pot_loss",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789442357727,
+      "tag": "0013_admin_custom_profile_current_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789449871041,
+      "tag": "0014_ttaengjabi_card_identity_gwang3_hongsari7",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789451412077,
+      "tag": "0015_sutda_result_distinguish_meongteong_gusa",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1789454386861,
+      "tag": "0016_room_lifecycle_zombie_room_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789456241040,
+      "tag": "0017_sutda3_open_card_simultaneous_reveal",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789458241160,
+      "tag": "0018_dori_rematch_keep_zero_balance_players",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789458318045,
+      "tag": "0019_dori_rematch_fix_ante_action_columns_and_carry_payout",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789458529677,
+      "tag": "0020_dori_rematch_zero_balance_case4_nonparticipant",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789466647528,
+      "tag": "0021_actionable_betting_players_close_street",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789466720418,
+      "tag": "0022_dori_reject_bet_without_opponent",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789541503771,
+      "tag": "0023_fix_actionable_betting_pending_response",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1789623989614,
+      "tag": "0024_usdt_only_withdrawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789625607466,
+      "tag": "0025_perf_history_sort_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789626284265,
+      "tag": "0026_allin_no_selfraise_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1789641517824,
+      "tag": "0027_security_scan_targeted_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789641945991,
+      "tag": "0028_custom_profile_active_image_read_helper",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789642003164,
+      "tag": "0029_revoke_public_execute_anon_definer_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789699316421,
+      "tag": "0030_manual_crypto_deposit_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1789699357764,
+      "tag": "0031_drop_legacy_credit_crypto_charge_overload",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789699630281,
+      "tag": "0032_fix_unmatched_candidate_lookup",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789699672392,
+      "tag": "0033_allow_review_and_cancelled_deposit_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1789699858722,
+      "tag": "0034_manual_crypto_audit_log_canonical",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789704854051,
+      "tag": "0035_chat_read_policy_initplan_perf",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789718709692,
+      "tag": "0036_manual_credit_orphan_deposit_and_3dp_amount",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789719216701,
+      "tag": "0037_dori_rematch_exclude_folded_and_mask_make_timing",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789719267721,
+      "tag": "0038_dori_room_state_restore_payload_with_make_mask",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789978497889,
+      "tag": "0039_get_round_snapshot_readonly_wrapper",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790658907422,
+      "tag": "0040_telegram_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790660388535,
+      "tag": "0041_telegram_links_tighten",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790754239510,
+      "tag": "0042_crypto_charge_suffix_3rd_decimal_only",
+      "breakpoints": true
+    }
+  ]
+}

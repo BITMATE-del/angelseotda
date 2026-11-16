@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.admin_integrity_card_check() FROM anon, authenticated, PUBLIC;
