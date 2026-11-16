@@ -6,6 +6,7 @@
  */
 import postgres from "postgres";
 import {isRoomUuid} from "./rooms.server";
+import {getPreviewTurnStatus} from "./previewTurns.server";
 import {evaluatePreviewShowdown,type PreviewMode,type PreviewShowdownPlayer} from "./showdownPreview.server";
 
 let pool:ReturnType<typeof postgres>|undefined;
@@ -22,9 +23,7 @@ export async function readPreviewOutcome(accountId:string,roomId:string) {
   const metadata=await sql`
     select r.id,r.phase,room.mode,
       (select count(*)::integer from public.angel_round_players
-        where round_id=r.id) as players,
-      (select count(*)::integer from public.angel_game_actions
-        where round_id=r.id and action_type='PREVIEW_PASS') as passed
+        where round_id=r.id) as players
     from public.angel_rounds r
     join public.angel_rooms room on room.id=r.room_id and room.status='WAITING'
     join public.angel_round_players participant on participant.round_id=r.id
@@ -35,11 +34,12 @@ export async function readPreviewOutcome(accountId:string,roomId:string) {
   `;
   const m=metadata[0];
   if(!m)return null;
-  const players=Number(m['players']),passed=Number(m['passed']);
-  if(players<2 || passed<players)
-    return {status:"WAITING_FOR_PREVIEW_TURNS" as const,passed,players,
-      realSettlement:false};
-  if(passed!==players)throw new Error("PREVIEW_ACTION_COUNT_MISMATCH");
+  const players=Number(m['players']);
+  const turn=await getPreviewTurnStatus(accountId,roomId);
+  if(!turn)throw new Error("PREVIEW_TURN_STATE_MISSING");
+  if(players<2 || !turn.complete)
+    return {status:"WAITING_FOR_PREVIEW_TURNS" as const,
+      passed:turn.actedSeats.length,players,realSettlement:false};
   const hands=await sql`
     select p.account_id,p.seat_number,p.committed_amount,p.result,
       h.card_ids,s.selected_card_ids,s.mode as chosen_mode
@@ -65,8 +65,7 @@ export async function readPreviewOutcome(accountId:string,roomId:string) {
       seat:Number(row['seat_number']),
       cards:cards as string[],
       contribution:String(row['committed_amount']),
-      // No real folded state exists yet; all players remain in the preview.
-      folded:false,
+      folded:turn.foldedSeats.includes(Number(row['seat_number'])),
       ...(mode==="SUTDA3" && Array.isArray(selection)?
         {selectedPair:selection as string[]}:{}),
       ...(mode==="DORI" && Array.isArray(selection)?
