@@ -208,6 +208,93 @@ export async function dealStagingRound(accountId:string,roomId:string) {
  * Read view: reveal ONLY requester's own cards, never an opponent's hand.
  * Return seat numbers and face-down counts to authorized round participants.
  */
+/**
+ * Pure turn sequence helper. One non-monetary preview pass per participant.
+ * Actual CHECK/CALL/DIE/RAISE rules are intentionally NOT implemented here.
+ */
+export function nextPreviewSeat(seats: readonly number[], current: number, acted: readonly number[]) {
+  const ordered = [...seats].sort((a,b)=>a-b);
+  if (ordered.length < 2 || ordered.length !== new Set(ordered).size ||
+      !ordered.includes(current) || acted.includes(current) ||
+      acted.some(n=>!ordered.includes(n))) throw new Error("INVALID_PREVIEW_TURN_STATE");
+  const nextActed = new Set([...acted,current]);
+  const complete = nextActed.size === ordered.length;
+  if (complete) return {nextSeat:current,complete:true,actedCount:nextActed.size};
+  const start=ordered.indexOf(current);
+  for (let i=1;i<=ordered.length;i++) {
+    const seat=ordered[(start+i)%ordered.length]!;
+    if (!nextActed.has(seat)) return {nextSeat:seat,complete:false,actedCount:nextActed.size};
+  }
+  throw new Error("INVALID_PREVIEW_TURN_STATE");
+}
+
+/**
+ * Secure turn-only preview action, no changes to financial or card tables.
+ * Uses room lock shared by join/leave/deal; idempotency via request_id.
+ */
+export async function passPreviewTurn(accountId:string, roomId:string, requestId:string) {
+  if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
+  if (!/^[a-zA-Z0-9_-]{12,100}$/.test(requestId)) throw new Error("INVALID_REQUEST_ID");
+  const sql=db();
+  return sql.begin(async tx => {
+    const rooms=await tx`
+      select id, status from public.angel_rooms
+      where id=${roomId}::uuid for update
+    `;
+    if (!rooms[0] || rooms[0]['status']!=="WAITING") throw new Error("ROOM_UNAVAILABLE");
+    const rows=await tx`
+      select r.id, rt.turn_seat, rt.accepts_bets
+      from public.angel_rounds r
+      join public.angel_round_runtime rt on rt.round_id=r.id
+      where r.room_id=${roomId}::uuid and r.phase='DEALT_PREVIEW'
+        and r.settlement_status='PENDING'
+      order by r.round_number desc limit 1 for update of r, rt
+    `;
+    const round=rows[0];
+    if (!round) throw new Error("ROUND_NOT_DEALT");
+    const roundId=String(round['id']);
+    // Replaying a successful request is safe but never advances again.
+    const prior=await tx`
+      select id,round_id,actor_id from public.angel_game_actions
+      where request_id=${requestId} limit 1
+    `;
+    if (prior.length) {
+      if (String(prior[0]?.['round_id'])!==roundId ||
+          String(prior[0]?.['actor_id'])!==accountId)
+        throw new Error("REQUEST_ID_CONFLICT");
+      return {roundId,reused:true,turnSeat:Number(round['turn_seat']),
+        previewOnly:true};
+    }
+    const players=await tx`
+      select account_id,seat_number from public.angel_round_players
+      where round_id=${roundId}::uuid order by seat_number
+    `;
+    const me=players.find(p=>String(p['account_id'])===accountId);
+    if (!me) throw new Error("NOT_IN_ROUND");
+    const current=Number(round['turn_seat']);
+    if (Number(me['seat_number'])!==current) throw new Error("NOT_YOUR_TURN");
+    if (round['accepts_bets']!==false) throw new Error("PREVIEW_ONLY");
+    const actions=await tx`
+      select actor_id from public.angel_game_actions
+      where round_id=${roundId}::uuid and action_type='PREVIEW_PASS'
+      order by created_at
+    `;
+    const seatByAccount=new Map(players.map(p=>[String(p['account_id']),Number(p['seat_number'])]));
+    const acted=actions.map(a=>seatByAccount.get(String(a['actor_id'])) ?? -1);
+    const next=nextPreviewSeat(players.map(p=>Number(p['seat_number'])),current,acted);
+    await tx`
+      insert into public.angel_game_actions(round_id,actor_id,request_id,action_type,amount)
+      values(${roundId}::uuid,${accountId}::uuid,${requestId},'PREVIEW_PASS',0)
+    `;
+    await tx`
+      update public.angel_round_runtime set turn_seat=${next.nextSeat}
+      where round_id=${roundId}::uuid and accepts_bets=false
+    `;
+    return {roundId,reused:false,turnSeat:next.nextSeat,
+      previewComplete:next.complete,previewOnly:true};
+  });
+}
+
 export async function getOwnPreviewCards(accountId:string,roomId:string) {
   if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
   const sql=db();
@@ -215,7 +302,12 @@ export async function getOwnPreviewCards(accountId:string,roomId:string) {
     select r.id,r.phase,rt.turn_seat,p.seat_number,
       h.card_ids as own_cards,
       (select count(*)::integer from public.angel_round_players other
-       where other.round_id=r.id) as players
+       where other.round_id=r.id) as players,
+      (select count(*)::integer from public.angel_game_actions action
+       where action.round_id=r.id and action.action_type='PREVIEW_PASS') as passes,
+      exists(select 1 from public.angel_game_actions mine
+       where mine.round_id=r.id and mine.actor_id=${accountId}::uuid
+         and mine.action_type='PREVIEW_PASS') as did_pass
     from public.angel_rounds r
     join public.angel_round_players p on p.round_id=r.id
       and p.account_id=${accountId}::uuid
@@ -235,5 +327,7 @@ export async function getOwnPreviewCards(accountId:string,roomId:string) {
     mySeat:Number(row['seat_number']),turnSeat:Number(row['turn_seat']),
     myCards:cards as string[],
     playerCount:Number(row['players']),acceptsBets:false,
+    passes:Number(row['passes']),didPass:Boolean(row['did_pass']),
+    previewComplete:Number(row['passes']) >= Number(row['players']),
     realGameStarted:false};
 }
