@@ -102,3 +102,94 @@ export async function joinStagingRoom(accountId: string, roomId: string) {
     return { roomId, seatNumber };
   });
 }
+
+
+export function isRoomUuid(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+/**
+ * Detailed seating: never selects card identities or any private game state.
+ * Only exposes waiting-room nicknames to authenticated users.
+ */
+export async function getStagingRoomDetail(accountId: string, roomId: string) {
+  if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
+  const sql = db();
+  const roomRows = await sql`
+    select id, mode, room_name, base_bet, status, owner_id
+    from public.angel_rooms
+    where id=${roomId}::uuid and status='WAITING'
+    limit 1
+  `;
+  const room = roomRows[0];
+  if (!room) throw new Error("ROOM_UNAVAILABLE");
+  const players = await sql`
+    select s.seat_number, a.nickname,
+      (s.account_id=${accountId}::uuid) as is_me,
+      (s.account_id=${room['owner_id']}::uuid) as is_owner
+    from public.angel_room_seats s
+    join public.angel_accounts a on a.id=s.account_id
+    where s.room_id=${roomId}::uuid
+    order by s.seat_number
+  `;
+  return {
+    id: String(room['id']),
+    mode: String(room['mode']),
+    title: String(room['room_name']),
+    baseBet: String(room['base_bet']),
+    status: String(room['status']),
+    ownerId: String(room['owner_id']),
+    seats: players.map(p => ({
+      number: Number(p['seat_number']),
+      nickname: String(p['nickname']),
+      isMe: Boolean(p['is_me']),
+      isOwner: Boolean(p['is_owner']),
+    })),
+  };
+}
+
+/**
+ * Leave a WAITING room without changing wallets. Room row lock prevents
+ * concurrent seat assignment during departure.
+ * An empty waiting room becomes CLOSED (history is not deleted).
+ * Leaving the owner seat while others remain transfers ownership to
+ * the lowest occupied seat to avoid orphaned waiting rooms.
+ */
+export async function leaveStagingRoom(accountId: string, roomId: string) {
+  if (!isRoomUuid(roomId)) throw new Error("INVALID_ROOM");
+  const sql = db();
+  return sql.begin(async tx => {
+    const roomRows = await tx`
+      select id, status, owner_id
+      from public.angel_rooms where id=${roomId}::uuid for update
+    `;
+    const room = roomRows[0];
+    if (!room || room['status'] !== "WAITING")
+      throw new Error("ROOM_UNAVAILABLE");
+    const removed = await tx`
+      delete from public.angel_room_seats
+      where room_id=${roomId}::uuid and account_id=${accountId}::uuid
+      returning seat_number
+    `;
+    if (removed.length !== 1) throw new Error("NOT_IN_ROOM");
+    const remaining = await tx`
+      select account_id from public.angel_room_seats
+      where room_id=${roomId}::uuid order by seat_number asc limit 1
+    `;
+    if (!remaining.length) {
+      await tx`
+        update public.angel_rooms set status='CLOSED'
+        where id=${roomId}::uuid
+      `;
+      return { roomId, left: true, closed: true };
+    }
+    if (String(room['owner_id']) === accountId) {
+      await tx`
+        update public.angel_rooms set owner_id=${String(remaining[0]?.['account_id'])}::uuid
+        where id=${roomId}::uuid
+      `;
+    }
+    return { roomId, left: true, closed: false };
+  });
+}
