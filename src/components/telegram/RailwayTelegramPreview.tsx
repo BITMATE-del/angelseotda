@@ -26,6 +26,11 @@ interface PrivatePreview {
   previewComplete: boolean; realGameStarted: false;
 }
 interface MyFinalChoice { mode:string;selected:string[];previewOnly:true; }
+type PreviewOutcome={
+  status:"WAITING_FOR_PREVIEW_TURNS"|"BLOCKED"|"PREVIEW_RESULT_ONLY";
+  passed?:number;players?:number;reason?:string;winnerSeats?:number[];
+  realSettlement:false;
+};
 interface BetDryRun {
   previewOnly: true; canExecute: false; monetaryEffects: false;
   isMyTurn: boolean;
@@ -51,6 +56,7 @@ export function RailwayTelegramPreview() {
   const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
   const [betPreview, setBetPreview] = useState<BetDryRun | null>(null);
   const [finalChoice,setFinalChoice] = useState<MyFinalChoice | null>(null);
+  const [outcome,setOutcome] = useState<PreviewOutcome | null>(null);
   const [chosenCards,setChosenCards] = useState<string[]>([]);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
@@ -135,13 +141,14 @@ export function RailwayTelegramPreview() {
       const data = await response.json() as {
         room: PreviewRoomDetail; preparedRound: PreparedRound | null;
         privatePreview: PrivatePreview | null; betPreview: BetDryRun | null;
-        finalChoice: MyFinalChoice | null;
+        finalChoice: MyFinalChoice | null;outcome:PreviewOutcome | null;
       };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
       setPrivatePreview(data.privatePreview);
       setBetPreview(data.betPreview);
       setFinalChoice(data.finalChoice);
+      setOutcome(data.outcome);
       setChosenCards(data.finalChoice?.selected ?? []);
       setSelectedRoomId(roomId);
     } catch (error) {
@@ -150,6 +157,7 @@ export function RailwayTelegramPreview() {
       setPrivatePreview(null);
       setBetPreview(null);
       setFinalChoice(null);
+      setOutcome(null);
       setChosenCards([]);
       setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
@@ -182,6 +190,7 @@ export function RailwayTelegramPreview() {
         setPrivatePreview(null);
         setBetPreview(null);
         setFinalChoice(null);
+        setOutcome(null);
         setChosenCards([]);
       } else if (payload['action'] === "join" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
@@ -388,6 +397,18 @@ export function RailwayTelegramPreview() {
                                 최종 패 확정 (정산 없음)
                               </Button>
                             </>
+                          )}
+                        </div>
+                      )}
+                      {outcome && (
+                        <div role="status" className="rounded-lg border border-white/10 p-2 text-xs">
+                          <p className="font-semibold">게임 결과 계산 시험 (정산 없음)</p>
+                          {outcome.status==="PREVIEW_RESULT_ONLY" ? (
+                            <p>예비 승리 좌석: {outcome.winnerSeats?.join(", ")}번 · 포인트 지급 없음</p>
+                          ): outcome.status==="BLOCKED" ? (
+                            <p>결과 보류: {outcome.reason} · 재경기/최종 선택 검토 필요</p>
+                          ): (
+                            <p>참가자 턴 완료 대기: {outcome.passed}/{outcome.players}</p>
                           )}
                         </div>
                       )}
