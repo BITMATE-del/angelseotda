@@ -11,6 +11,7 @@ import { signInWithUsername } from "@/lib/services/accountService";
 import { formatPoints } from "@/lib/services/walletService";
 import { loadTelegramSdk } from "@/lib/telegram/miniApp";
 import { telegramLink, telegramLogin } from "@/lib/telegram/telegram.functions";
+import { RailwayTelegramPreview } from "@/components/telegram/RailwayTelegramPreview";
 
 export const Route = createFileRoute("/telegram")({
   ssr: false,
@@ -25,8 +26,17 @@ export const Route = createFileRoute("/telegram")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: TelegramPage,
+  component: TelegramEntryPage,
 });
+
+function TelegramEntryPage() {
+  // Only the isolated staging build uses the new Railway login.
+  // The original Telegram page remains unchanged for other builds.
+  if (import.meta.env['VITE_RAILWAY_TELEGRAM_PREVIEW'] === "true") {
+    return <RailwayTelegramPreview />;
+  }
+  return <TelegramPage />;
+}
 
 type Stage = "loading" | "outside" | "choose" | "link" | "ready" | "error";
 
