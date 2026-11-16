@@ -47,9 +47,15 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
             if (!isRoomUuid(roomId)) return json({ error: "INVALID_ROOM" }, 400);
             const { getStagingPreparedRound, getOwnPreviewCards } =
               await import("@/lib/railway/rounds.server");
+            const privatePreview = await getOwnPreviewCards(account.id, roomId);
+            let betPreview = null;
+            if (privatePreview) {
+              const { getBettingDryRun } = await import("@/lib/railway/bettingPreview.server");
+              betPreview = await getBettingDryRun(account.id, roomId);
+            }
             return json({ room: await getStagingRoomDetail(account.id, roomId),
               preparedRound: await getStagingPreparedRound(account.id, roomId),
-              privatePreview: await getOwnPreviewCards(account.id, roomId) });
+              privatePreview, betPreview });
           }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
