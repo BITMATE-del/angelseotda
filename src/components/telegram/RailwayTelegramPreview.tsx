@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { loadTelegramSdk } from "@/lib/telegram/miniApp";
+import { doriBestMake } from "@/lib/game/dori/doriRules";
 
 interface AngelAccount {
   id: string;
@@ -372,7 +373,8 @@ export function RailwayTelegramPreview() {
                       <p className="text-xs text-muted-foreground">
                         다른 회원 카드는 공개되지 않습니다. 베팅과 정산은 비활성화되어 있습니다.
                       </p>
-                      {(roomDetail.mode==="SUTDA3" || roomDetail.mode==="DORI") && (
+                      {(roomDetail.mode==="SUTDA3" ||
+                        (roomDetail.mode==="DORI" && doriBestMake(privatePreview.myCards).made)) && (
                         <div className="space-y-2 rounded-lg border border-white/10 p-2">
                           <p className="text-xs font-semibold">
                             {roomDetail.mode==="SUTDA3"?"승부패 2장 선택":"짓기 3장 선택"}
@@ -399,6 +401,9 @@ export function RailwayTelegramPreview() {
                             </>
                           )}
                         </div>
+                      )}
+                      {roomDetail.mode==="DORI" && !doriBestMake(privatePreview.myCards).made && (
+                        <p className="text-xs">짓기 가능한 조합이 없어 황으로 자동 판정합니다. 선택은 필요하지 않습니다.</p>
                       )}
                       {outcome && (
                         <div role="status" className="rounded-lg border border-white/10 p-2 text-xs">
