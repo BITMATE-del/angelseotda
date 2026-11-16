@@ -10,6 +10,8 @@ interface AngelAccount {
   status: string;
 }
 interface PreviewRoom { id: string; mode: string; title: string; baseBet: string; seats: number; joined: boolean; }
+interface PreviewSeat { number: number; nickname: string; isMe: boolean; isOwner: boolean; }
+interface PreviewRoomDetail { id: string; mode: string; title: string; status: string; baseBet: string; seats: PreviewSeat[]; }
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
 /**
@@ -23,6 +25,8 @@ export function RailwayTelegramPreview() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [rooms, setRooms] = useState<PreviewRoom[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [roomDetail, setRoomDetail] = useState<PreviewRoomDetail | null>(null);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
   const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
@@ -92,9 +96,23 @@ export function RailwayTelegramPreview() {
       if (!response.ok) throw new Error("대기방 목록을 가져오지 못했습니다.");
       const result = await response.json() as { rooms?: PreviewRoom[] };
       setRooms(result.rooms ?? []);
-      setLobbyMessage("");
     } catch (error) {
       setLobbyMessage(error instanceof Error ? error.message : "대기방 조회 실패");
+    }
+  }
+
+  async function refreshRoomDetail(roomId: string) {
+    try {
+      const response = await fetch(`/api/public/railway-rooms?roomId=${encodeURIComponent(roomId)}`, {
+        credentials: "same-origin", cache: "no-store",
+      });
+      if (!response.ok) throw new Error("방 좌석을 확인할 수 없습니다.");
+      const data = await response.json() as { room: PreviewRoomDetail };
+      setRoomDetail(data.room);
+      setSelectedRoomId(roomId);
+    } catch (error) {
+      setRoomDetail(null);
+      setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
   }
 
@@ -113,9 +131,17 @@ export function RailwayTelegramPreview() {
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error("방 생성·입장에 실패했습니다.");
-      const data = await response.json() as { seatNumber?: number };
+      const data = await response.json() as { roomId?: string; seatNumber?: number };
       setLobbyMessage(`대기방에 ${data.seatNumber ?? "-"}번 좌석으로 입장했습니다. 게임은 아직 시작할 수 없습니다.`);
       await refreshRooms();
+      if (payload.action === "leave") {
+        setSelectedRoomId(null);
+        setRoomDetail(null);
+      } else if (payload.action === "join" && payload.roomId) {
+        await refreshRoomDetail(payload.roomId);
+      } else if (payload.action === "create" && data.roomId) {
+        await refreshRoomDetail(data.roomId);
+      }
     } catch (error) {
       setLobbyMessage(error instanceof Error ? error.message : "입장 실패");
     } finally {
@@ -206,7 +232,33 @@ export function RailwayTelegramPreview() {
                   onClick={() => void roomAction({ action: "join", roomId: room.id })}>
                   {room.joined ? "입장됨" : "입장"}
                 </Button>
+                {room.joined && (
+                  <Button variant="table" disabled={busy}
+                    onClick={() => void refreshRoomDetail(room.id)}>좌석 보기</Button>
+                )}
               </div>)}
+              {selectedRoomId && roomDetail && (
+                <div className="space-y-2 rounded-xl border border-white/20 p-3">
+                  <h3 className="text-sm font-semibold">{roomDetail.title} · 대기실</h3>
+                  <p className="text-xs text-muted-foreground">
+                    카드 공개·게임 시작·베팅은 아직 비활성화되어 있습니다.
+                  </p>
+                  {roomDetail.seats.map(seat => (
+                    <div key={seat.number} className="flex justify-between text-xs">
+                      <span>{seat.number}번 좌석 · {seat.nickname}{seat.isMe ? " (나)" : ""}</span>
+                      <span>{seat.isOwner ? "방장" : "대기 중"}</span>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="table" disabled={busy}
+                      onClick={() => void refreshRoomDetail(selectedRoomId)}>좌석 새로고침</Button>
+                    <Button variant="table" disabled={busy || !roomDetail.seats.some(s => s.isMe)}
+                      onClick={() => void roomAction({ action: "leave", roomId: selectedRoomId })}>
+                      방 나가기
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <Button className="h-11 w-full" variant="table" onClick={() => void signOut()} disabled={busy}>
               {busy ? "로그아웃 중…" : "로그아웃"}
