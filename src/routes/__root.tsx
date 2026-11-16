@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  useLocation,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
@@ -128,12 +129,27 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const railwayPreview = import.meta.env['VITE_RAILWAY_TELEGRAM_PREVIEW'] === "true";
+  // Staging only: do not accidentally expose Supabase-dependent game/wallet UI.
+  const showPreviewGate = railwayPreview && pathname !== "/telegram";
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      {/* 안내/오류 토스트는 전역에서 한 번만 마운트한다. */}
+      {showPreviewGate ? (
+        <main className="flex min-h-screen items-center justify-center bg-background px-5">
+          <div className="panel-surface gold-frame w-full max-w-md space-y-4 rounded-2xl p-6 text-center">
+            <h1 className="text-xl font-bold text-gold">엔젤섯다 테스트 준비 중</h1>
+            <p className="text-sm text-muted-foreground">
+              현재는 텔레그램 로그인만 검증 중입니다.
+              게임·충전·출금·정산 기능은 안전 점검 후 공개됩니다.
+            </p>
+            <Link to="/telegram" className="text-gold underline">텔레그램 로그인 화면</Link>
+          </div>
+        </main>
+      ) : (
+        <Outlet />
+      )}
       <Toaster />
     </QueryClientProvider>
   );
