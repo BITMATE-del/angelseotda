@@ -111,7 +111,17 @@ export async function actPreviewTurn(
   if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
   if(!validRequest.test(requestId))throw new Error("INVALID_REQUEST_ID");
   if(action!=="CHECK"&&action!=="FOLD")throw new Error("INVALID_PREVIEW_ACTION");
-  return db().begin(async tx=>{
+  return db().begin(tx=>applyPreviewTurn(tx,accountId,roomId,requestId,action));
+}
+
+/** A transaction-injectable core used by rollback-only PostgreSQL audits. */
+export async function applyPreviewTurn(
+  tx:postgres.TransactionSql,accountId:string,roomId:string,
+  requestId:string,action:PreviewAction
+){
+  if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
+  if(!validRequest.test(requestId))throw new Error("INVALID_REQUEST_ID");
+  if(action!=="CHECK"&&action!=="FOLD")throw new Error("INVALID_PREVIEW_ACTION");
     const room=await tx`select status from public.angel_rooms
       where id=${roomId}::uuid for update`;
     if(room[0]?.['status']!=="WAITING")throw new Error("ROOM_UNAVAILABLE");
@@ -170,5 +180,4 @@ export async function actPreviewTurn(
     return {roundId,turnSeat:next.turnSeat,complete:next.complete,
       activeSeats:next.activeSeats,foldedSeats:next.foldedSeats,
       reused:false,previewOnly:true,realSettlement:false};
-  });
 }
