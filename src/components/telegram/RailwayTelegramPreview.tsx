@@ -16,8 +16,13 @@ interface PreviewRoomDetail {
   ownerId: string; baseBet: string; seats: PreviewSeat[];
 }
 interface PreparedRound {
-  id: string; phase: "PREPARING"; roundNumber: number;
+  id: string; phase: "PREPARING" | "DEALT_PREVIEW"; roundNumber: number;
   playerCount: number; pot: string; realGameStarted: false;
+}
+interface PrivatePreview {
+  roundId: string; phase: "DEALT_PREVIEW"; mySeat: number;
+  turnSeat: number; myCards: string[]; playerCount: number;
+  acceptsBets: false; realGameStarted: false;
 }
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
@@ -35,6 +40,7 @@ export function RailwayTelegramPreview() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [roomDetail, setRoomDetail] = useState<PreviewRoomDetail | null>(null);
   const [preparedRound, setPreparedRound] = useState<PreparedRound | null>(null);
+  const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
   const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
@@ -115,13 +121,18 @@ export function RailwayTelegramPreview() {
         credentials: "same-origin", cache: "no-store",
       });
       if (!response.ok) throw new Error("방 좌석을 확인할 수 없습니다.");
-      const data = await response.json() as { room: PreviewRoomDetail; preparedRound: PreparedRound | null };
+      const data = await response.json() as {
+        room: PreviewRoomDetail; preparedRound: PreparedRound | null;
+        privatePreview: PrivatePreview | null;
+      };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
+      setPrivatePreview(data.privatePreview);
       setSelectedRoomId(roomId);
     } catch (error) {
       setRoomDetail(null);
       setPreparedRound(null);
+      setPrivatePreview(null);
       setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
   }
@@ -150,13 +161,17 @@ export function RailwayTelegramPreview() {
         setSelectedRoomId(null);
         setRoomDetail(null);
         setPreparedRound(null);
+        setPrivatePreview(null);
       } else if (payload['action'] === "join" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
       } else if (payload['action'] === "create" && data.roomId) {
         await refreshRoomDetail(data.roomId);
       } else if (payload['action'] === "prepare" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
-        setLobbyMessage("라운드 준비가 완료됐습니다. 카드 배분 및 실제 게임은 아직 불가합니다.");
+        setLobbyMessage("라운드 준비가 완료됐습니다. 실제 베팅과 정산은 아직 불가합니다.");
+      } else if (payload['action'] === "dealPreview" && payload['roomId']) {
+        await refreshRoomDetail(payload['roomId']);
+        setLobbyMessage("테스트 카드가 비공개로 배분됐습니다. 실제 게임 시작은 아닙니다.");
       }
     } catch (error) {
       setLobbyMessage(error instanceof Error ? error.message : "입장 실패");
@@ -265,10 +280,33 @@ export function RailwayTelegramPreview() {
                       <span>{seat.isOwner ? "방장" : "대기 중"}</span>
                     </div>
                   ))}
+                  {preparedRound?.phase === "PREPARING" &&
+                    roomDetail.ownerId === account.id && (
+                    <Button variant="gold" className="w-full" disabled={busy}
+                      onClick={() => void roomAction({ action: "dealPreview", roomId: selectedRoomId })}>
+                      비공개 카드 배분 시험 (포인트 차감 없음)
+                    </Button>
+                  )}
+                  {privatePreview && (
+                    <div className="space-y-2 rounded-lg border border-white/20 p-3">
+                      <p className="text-xs font-semibold">내 카드 — {privatePreview.mySeat}번 좌석</p>
+                      <div className="flex flex-wrap gap-2">
+                        {privatePreview.myCards.map((id, i) => (
+                          <img key={i} src={`/cards/hwatu/base/${id}.png`} alt={`내 카드 ${i + 1}`}
+                            className="h-24 w-auto rounded-md" />
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        턴 기준 좌석: {privatePreview.turnSeat}번 · 다른 회원 카드는 공개되지 않습니다.
+                        실제 베팅과 정산은 비활성화되어 있습니다.
+                      </p>
+                    </div>
+                  )}
                   {preparedRound && (
                     <div role="status" className="rounded-lg border border-white/10 p-2 text-xs">
                       <p>라운드 #{preparedRound.roundNumber} · 참가자 {preparedRound.playerCount}명</p>
-                      <p>준비 완료 (실제 게임 시작 전) · POT {preparedRound.pot}P</p>
+                      <p>{preparedRound.phase === "DEALT_PREVIEW" ? "비공개 카드 배분 완료" : "라운드 준비 완료"}
+                        (실제 게임 시작 전) · POT {preparedRound.pot}P</p>
                     </div>
                   )}
                   {roomDetail.ownerId === account.id && roomDetail.seats.length >= 2 && !preparedRound && (
