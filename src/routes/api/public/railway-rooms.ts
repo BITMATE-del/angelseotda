@@ -56,9 +56,12 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
             const { readOwnFinalChoice } = await import("@/lib/railway/finalChoices.server");
             const finalChoice = privatePreview
               ? await readOwnFinalChoice(account.id, roomId) : null;
+            const { readPreviewOutcome } = await import("@/lib/railway/outcomePreview.server");
+            const outcome = privatePreview
+              ? await readPreviewOutcome(account.id, roomId) : null;
             return json({ room: await getStagingRoomDetail(account.id, roomId),
               preparedRound: await getStagingPreparedRound(account.id, roomId),
-              privatePreview, betPreview, finalChoice });
+              privatePreview, betPreview, finalChoice, outcome });
           }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
