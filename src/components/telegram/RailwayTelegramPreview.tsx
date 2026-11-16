@@ -25,6 +25,12 @@ interface PrivatePreview {
   acceptsBets: false; passes: number; didPass: boolean;
   previewComplete: boolean; realGameStarted: false;
 }
+interface BetDryRun {
+  previewOnly: true; canExecute: false; monetaryEffects: false;
+  isMyTurn: boolean;
+  sample: { pot:string; currentBet:string; stageBet:string; hypotheticalBalance:string };
+  actions: Array<{ action:string; enabled:boolean; sampleAdditionalAmount:string }>;
+}
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
 /**
@@ -42,6 +48,7 @@ export function RailwayTelegramPreview() {
   const [roomDetail, setRoomDetail] = useState<PreviewRoomDetail | null>(null);
   const [preparedRound, setPreparedRound] = useState<PreparedRound | null>(null);
   const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
+  const [betPreview, setBetPreview] = useState<BetDryRun | null>(null);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
   const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
@@ -124,16 +131,18 @@ export function RailwayTelegramPreview() {
       if (!response.ok) throw new Error("방 좌석을 확인할 수 없습니다.");
       const data = await response.json() as {
         room: PreviewRoomDetail; preparedRound: PreparedRound | null;
-        privatePreview: PrivatePreview | null;
+        privatePreview: PrivatePreview | null; betPreview: BetDryRun | null;
       };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
       setPrivatePreview(data.privatePreview);
+      setBetPreview(data.betPreview);
       setSelectedRoomId(roomId);
     } catch (error) {
       setRoomDetail(null);
       setPreparedRound(null);
       setPrivatePreview(null);
+      setBetPreview(null);
       setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
   }
@@ -163,6 +172,7 @@ export function RailwayTelegramPreview() {
         setRoomDetail(null);
         setPreparedRound(null);
         setPrivatePreview(null);
+        setBetPreview(null);
       } else if (payload['action'] === "join" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
       } else if (payload['action'] === "create" && data.roomId) {
@@ -319,6 +329,26 @@ export function RailwayTelegramPreview() {
                       <p className="text-xs text-muted-foreground">
                         다른 회원 카드는 공개되지 않습니다. 베팅과 정산은 비활성화되어 있습니다.
                       </p>
+                      {betPreview && (
+                        <div className="space-y-2 rounded-lg border border-white/10 p-2">
+                          <p className="text-xs font-semibold">베팅 금액 계산 시험 · 실제 차감 없음</p>
+                          <p className="text-xs text-muted-foreground">
+                            가상 POT {betPreview.sample.pot}P · 가상 잔액 {betPreview.sample.hypotheticalBalance}P
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            아래 금액은 계산 예시이며 실제 포인트나 베팅 가능 여부가 아닙니다.
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {betPreview.actions.map(option => (
+                              <div key={option.action}
+                                className="rounded-md border border-white/10 px-2 py-1 text-xs">
+                                <div>{option.action}</div>
+                                <div>{option.enabled ? option.sampleAdditionalAmount+"P" : "예시 조건 불충족"}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {preparedRound && (
