@@ -8,7 +8,7 @@
  */
 import { SUTDA_CARDS } from "@/data/sutdaCards";
 import { contextualScores, evaluateSutda2 } from "@/lib/game/sutda2Rules";
-import { evaluateSutda3 } from "@/lib/game/sutda3Rules";
+
 import { doriBestMake, doriEffectiveRanks, validateDoriMake } from "@/lib/game/dori/doriRules";
 import { calculateSidePots, type SidePotParticipant, type SidePotResult } from "./sidePotsPreview.server";
 
@@ -66,7 +66,7 @@ export function evaluatePreviewShowdown(
       if(mode==="SUTDA3" && !selectionMatches(p.cards,p.selectedPair??[],2))
         return blocked("SELECTION_REQUIRED",[]);
       const hand=mode==="SUTDA2" ? evaluateSutda2(p.cards) :
-        evaluateSutda3(p.selectedPair!);
+        evaluateSutda2(p.selectedPair!);
       hands.push(hand);
     }
     if(hands.some(h=>h.category==="gusa"))
