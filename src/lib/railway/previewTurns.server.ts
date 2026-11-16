@@ -35,7 +35,7 @@ export function derivePreviewTurnState(
     if(event.action==="FOLD")alive.delete(event.seat);
     if(alive.size<=1 || [...alive].every(s=>acted.has(s))){
       complete=true;
-      break;
+      continue;
     }
     const from=ordered.indexOf(turn);
     const next=[...ordered.slice(from+1),...ordered.slice(0,from+1)]
