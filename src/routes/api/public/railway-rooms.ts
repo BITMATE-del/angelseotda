@@ -19,8 +19,9 @@ function failure(error: unknown) {
   const reason = error instanceof Error ? error.message : "";
   if (["INVALID_ROOM_INPUT", "INVALID_ROOM"].includes(reason))
     return json({ error: reason }, 400);
-  if (reason === "ROOM_FULL" || reason === "ROOM_UNAVAILABLE" || reason === "NOT_IN_ROOM")
+  if (["ROOM_FULL", "ROOM_UNAVAILABLE", "NOT_IN_ROOM", "ROUND_ALREADY_PREPARED", "INVALID_PLAYER_COUNT"].includes(reason))
     return json({ error: reason }, 409);
+  if (reason === "OWNER_ONLY") return json({ error: "OWNER_ONLY" }, 403);
   if (reason === "NOT_AUTHORIZED") return json({ error: "UNAUTHORIZED" }, 401);
   console.error("RAILWAY_LOBBY_FAILED", reason);
   return json({ error: "LOBBY_UNAVAILABLE" }, 503);
@@ -44,7 +45,9 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
           const roomId = url.searchParams.get("roomId");
           if (roomId !== null) {
             if (!isRoomUuid(roomId)) return json({ error: "INVALID_ROOM" }, 400);
-            return json({ room: await getStagingRoomDetail(account.id, roomId) });
+            const { getStagingPreparedRound } = await import("@/lib/railway/rounds.server");
+            return json({ room: await getStagingRoomDetail(account.id, roomId),
+              preparedRound: await getStagingPreparedRound(account.id, roomId) });
           }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
@@ -80,6 +83,12 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
               return json({ error: "INVALID_ROOM" }, 400);
             return json({ ok: true,
               ...(await joinStagingRoom(account.id, body['roomId'])) });
+          }
+          if (body['action'] === "prepare") {
+            if (typeof body['roomId'] !== "string")
+              return json({ error: "INVALID_ROOM" }, 400);
+            const { prepareStagingRound } = await import("@/lib/railway/rounds.server");
+            return json({ ok: true, ...(await prepareStagingRound(account.id, body['roomId'])) });
           }
           if (body['action'] === "leave") {
             if (typeof body['roomId'] !== "string")
