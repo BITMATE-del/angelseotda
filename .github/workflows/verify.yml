@@ -23,9 +23,11 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
+      # TanStack Router generates src/routeTree.gen.ts during Vite build.
+      # Build first so new file-based routes exist before strict TypeScript checks.
+      - name: Production build and route generation
+        run: bun run build
       - name: Typecheck
         run: bunx tsc --noEmit
       - name: Unit tests
         run: bun run test
-      - name: Production build
-        run: bun run build
