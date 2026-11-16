@@ -17,9 +17,9 @@ async function caller(request: Request) {
 }
 function failure(error: unknown) {
   const reason = error instanceof Error ? error.message : "";
-  if (["INVALID_ROOM_INPUT", "INVALID_ROOM"].includes(reason))
+  if (["INVALID_ROOM_INPUT", "INVALID_ROOM", "INVALID_REQUEST_ID"].includes(reason))
     return json({ error: reason }, 400);
-  if (["ROOM_FULL", "ROOM_UNAVAILABLE", "NOT_IN_ROOM", "ROUND_ALREADY_PREPARED", "INVALID_PLAYER_COUNT", "ROUND_NOT_PREPARED", "INACTIVE_PLAYER"].includes(reason))
+  if (["ROOM_FULL", "ROOM_UNAVAILABLE", "NOT_IN_ROOM", "ROUND_ALREADY_PREPARED", "INVALID_PLAYER_COUNT", "ROUND_NOT_PREPARED", "INACTIVE_PLAYER", "ROUND_NOT_DEALT", "NOT_IN_ROUND", "NOT_YOUR_TURN", "INVALID_PREVIEW_TURN_STATE", "REQUEST_ID_CONFLICT"].includes(reason))
     return json({ error: reason }, 409);
   if (reason === "OWNER_ONLY") return json({ error: "OWNER_ONLY" }, 403);
   if (reason === "NOT_AUTHORIZED") return json({ error: "UNAUTHORIZED" }, 401);
@@ -97,6 +97,14 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
               return json({ error: "INVALID_ROOM" }, 400);
             const { dealStagingRound } = await import("@/lib/railway/rounds.server");
             return json({ ok: true, ...(await dealStagingRound(account.id, body['roomId'])) });
+          }
+          if (body['action'] === "previewPass") {
+            if (typeof body['roomId'] !== "string" ||
+                typeof body['requestId'] !== "string")
+              return json({ error: "INVALID_ACTION" }, 400);
+            const { passPreviewTurn } = await import("@/lib/railway/rounds.server");
+            return json({ ok: true,
+              ...(await passPreviewTurn(account.id, body['roomId'], body['requestId'])) });
           }
           if (body['action'] === "leave") {
             if (typeof body['roomId'] !== "string")
