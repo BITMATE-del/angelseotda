@@ -19,7 +19,7 @@ function failure(error: unknown) {
   const reason = error instanceof Error ? error.message : "";
   if (["INVALID_ROOM_INPUT", "INVALID_ROOM"].includes(reason))
     return json({ error: reason }, 400);
-  if (reason === "ROOM_FULL" || reason === "ROOM_UNAVAILABLE")
+  if (reason === "ROOM_FULL" || reason === "ROOM_UNAVAILABLE" || reason === "NOT_IN_ROOM")
     return json({ error: reason }, 409);
   if (reason === "NOT_AUTHORIZED") return json({ error: "UNAUTHORIZED" }, 401);
   console.error("RAILWAY_LOBBY_FAILED", reason);
@@ -38,7 +38,14 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
         try {
           const account = await caller(request);
           if (!account) return json({ error: "UNAUTHORIZED" }, 401);
-          const { getStagingRooms } = await import("@/lib/railway/rooms.server");
+          const { getStagingRooms, getStagingRoomDetail, isRoomUuid } =
+            await import("@/lib/railway/rooms.server");
+          const url = new URL(request.url);
+          const roomId = url.searchParams.get("roomId");
+          if (roomId !== null) {
+            if (!isRoomUuid(roomId)) return json({ error: "INVALID_ROOM" }, 400);
+            return json({ room: await getStagingRoomDetail(account.id, roomId) });
+          }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
           return failure(error);
@@ -56,7 +63,7 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
           const body = await request.json().catch(() => null) as Record<string, unknown> | null;
           if (!body || typeof body['action'] !== "string")
             return json({ error: "INVALID_ACTION" }, 400);
-          const { createStagingRoom, joinStagingRoom, validMode } =
+          const { createStagingRoom, joinStagingRoom, leaveStagingRoom, validMode } =
             await import("@/lib/railway/rooms.server");
           if (body['action'] === "create") {
             if (!validMode(body['mode']) ||
@@ -73,6 +80,11 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
               return json({ error: "INVALID_ROOM" }, 400);
             return json({ ok: true,
               ...(await joinStagingRoom(account.id, body['roomId'])) });
+          }
+          if (body['action'] === "leave") {
+            if (typeof body['roomId'] !== "string")
+              return json({ error: "INVALID_ROOM" }, 400);
+            return json({ ok: true, ...(await leaveStagingRoom(account.id, body['roomId'])) });
           }
           return json({ error: "INVALID_ACTION" }, 400);
         } catch (error) {
