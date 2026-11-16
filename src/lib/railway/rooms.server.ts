@@ -89,7 +89,7 @@ export async function joinStagingRoom(accountId: string, roomId: string) {
     if (existing.length) return { roomId, seatNumber: Number(existing[0]?.['seat_number']) };
     const preparing = await tx`
       select id from public.angel_rounds
-      where room_id=${roomId}::uuid and phase='PREPARING'
+      where room_id=${roomId}::uuid and phase in ('PREPARING','DEALT_PREVIEW')
         and settlement_status='PENDING' limit 1
     `;
     if (preparing.length) throw new Error("ROUND_ALREADY_PREPARED");
@@ -99,7 +99,8 @@ export async function joinStagingRoom(accountId: string, roomId: string) {
     `;
     const filled = new Set(occupied.map(r => Number(r['seat_number'])));
     let seatNumber = 0;
-    const maxSeats = room[0]?.['mode'] === "DORI" ? 4 : MAX_SEATS;
+    const maxSeats = room[0]?.['mode'] === "DORI" ? 4
+      : room[0]?.['mode'] === "SUTDA3" ? 6 : MAX_SEATS;
     for (let i = 1; i <= maxSeats; i++) if (!filled.has(i)) { seatNumber=i; break; }
     if (!seatNumber) throw new Error("ROOM_FULL");
     await tx`
@@ -176,7 +177,7 @@ export async function leaveStagingRoom(accountId: string, roomId: string) {
       throw new Error("ROOM_UNAVAILABLE");
     const preparing = await tx`
       select id from public.angel_rounds
-      where room_id=${roomId}::uuid and phase='PREPARING'
+      where room_id=${roomId}::uuid and phase in ('PREPARING','DEALT_PREVIEW')
         and settlement_status='PENDING' limit 1
     `;
     if (preparing.length) throw new Error("ROUND_ALREADY_PREPARED");
