@@ -11,7 +11,14 @@ interface AngelAccount {
 }
 interface PreviewRoom { id: string; mode: string; title: string; baseBet: string; seats: number; joined: boolean; }
 interface PreviewSeat { number: number; nickname: string; isMe: boolean; isOwner: boolean; }
-interface PreviewRoomDetail { id: string; mode: string; title: string; status: string; baseBet: string; seats: PreviewSeat[]; }
+interface PreviewRoomDetail {
+  id: string; mode: string; title: string; status: string;
+  ownerId: string; baseBet: string; seats: PreviewSeat[];
+}
+interface PreparedRound {
+  id: string; phase: "PREPARING"; roundNumber: number;
+  playerCount: number; pot: string; realGameStarted: false;
+}
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
 /**
@@ -27,6 +34,7 @@ export function RailwayTelegramPreview() {
   const [rooms, setRooms] = useState<PreviewRoom[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [roomDetail, setRoomDetail] = useState<PreviewRoomDetail | null>(null);
+  const [preparedRound, setPreparedRound] = useState<PreparedRound | null>(null);
   const [lobbyMessage, setLobbyMessage] = useState("");
   const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
   const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
@@ -107,11 +115,13 @@ export function RailwayTelegramPreview() {
         credentials: "same-origin", cache: "no-store",
       });
       if (!response.ok) throw new Error("방 좌석을 확인할 수 없습니다.");
-      const data = await response.json() as { room: PreviewRoomDetail };
+      const data = await response.json() as { room: PreviewRoomDetail; preparedRound: PreparedRound | null };
       setRoomDetail(data.room);
+      setPreparedRound(data.preparedRound);
       setSelectedRoomId(roomId);
     } catch (error) {
       setRoomDetail(null);
+      setPreparedRound(null);
       setLobbyMessage(error instanceof Error ? error.message : "좌석 조회 실패");
     }
   }
@@ -139,10 +149,14 @@ export function RailwayTelegramPreview() {
       if (payload['action'] === "leave") {
         setSelectedRoomId(null);
         setRoomDetail(null);
+        setPreparedRound(null);
       } else if (payload['action'] === "join" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
       } else if (payload['action'] === "create" && data.roomId) {
         await refreshRoomDetail(data.roomId);
+      } else if (payload['action'] === "prepare" && payload['roomId']) {
+        await refreshRoomDetail(payload['roomId']);
+        setLobbyMessage("라운드 준비가 완료됐습니다. 카드 배분 및 실제 게임은 아직 불가합니다.");
       }
     } catch (error) {
       setLobbyMessage(error instanceof Error ? error.message : "입장 실패");
@@ -251,10 +265,22 @@ export function RailwayTelegramPreview() {
                       <span>{seat.isOwner ? "방장" : "대기 중"}</span>
                     </div>
                   ))}
+                  {preparedRound && (
+                    <div role="status" className="rounded-lg border border-white/10 p-2 text-xs">
+                      <p>라운드 #{preparedRound.roundNumber} · 참가자 {preparedRound.playerCount}명</p>
+                      <p>준비 완료 (실제 게임 시작 전) · POT {preparedRound.pot}P</p>
+                    </div>
+                  )}
+                  {roomDetail.ownerId === account.id && roomDetail.seats.length >= 2 && !preparedRound && (
+                    <Button variant="gold" className="w-full" disabled={busy}
+                      onClick={() => void roomAction({ action: "prepare", roomId: selectedRoomId })}>
+                      라운드 준비 (포인트 차감 없음)
+                    </Button>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="table" disabled={busy}
                       onClick={() => void refreshRoomDetail(selectedRoomId)}>좌석 새로고침</Button>
-                    <Button variant="table" disabled={busy || !roomDetail.seats.some(s => s.isMe)}
+                    <Button variant="table" disabled={busy || !!preparedRound || !roomDetail.seats.some(s => s.isMe)}
                       onClick={() => void roomAction({ action: "leave", roomId: selectedRoomId })}>
                       방 나가기
                     </Button>
