@@ -9,6 +9,7 @@ interface AngelAccount {
   balance: string;
   status: string;
 }
+interface PreviewRoom { id: string; mode: string; title: string; baseBet: string; seats: number; joined: boolean; }
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
 /**
@@ -21,6 +22,11 @@ export function RailwayTelegramPreview() {
   const [account, setAccount] = useState<AngelAccount | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [rooms, setRooms] = useState<PreviewRoom[]>([]);
+  const [lobbyMessage, setLobbyMessage] = useState("");
+  const [roomTitle, setRoomTitle] = useState("엔젤 연습방");
+  const [roomMode, setRoomMode] = useState<"SUTDA2" | "SUTDA3" | "DORI">("SUTDA2");
+  const [roomBaseBet, setRoomBaseBet] = useState("1000");
 
   useEffect(() => {
     let active = true;
@@ -78,6 +84,45 @@ export function RailwayTelegramPreview() {
     return () => { active = false; controller.abort(); };
   }, []);
 
+  async function refreshRooms() {
+    try {
+      const response = await fetch("/api/public/railway-rooms", {
+        credentials: "same-origin", cache: "no-store",
+      });
+      if (!response.ok) throw new Error("대기방 목록을 가져오지 못했습니다.");
+      const result = await response.json() as { rooms?: PreviewRoom[] };
+      setRooms(result.rooms ?? []);
+      setLobbyMessage("");
+    } catch (error) {
+      setLobbyMessage(error instanceof Error ? error.message : "대기방 조회 실패");
+    }
+  }
+
+  useEffect(() => {
+    if (screen !== "ready") return;
+    void refreshRooms();
+  }, [screen]);
+
+  async function roomAction(payload: Record<string, string>) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/public/railway-rooms", {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("방 생성·입장에 실패했습니다.");
+      const data = await response.json() as { seatNumber?: number };
+      setLobbyMessage(`대기방에 ${data.seatNumber ?? "-"}번 좌석으로 입장했습니다. 게임은 아직 시작할 수 없습니다.`);
+      await refreshRooms();
+    } catch (error) {
+      setLobbyMessage(error instanceof Error ? error.message : "입장 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     if (busy) return;
     setBusy(true);
@@ -122,8 +167,47 @@ export function RailwayTelegramPreview() {
             <p className="text-sm text-muted-foreground">계정 잔액</p>
             <p className="font-display text-2xl text-gold">{account.balance} P</p>
             <p className="text-sm text-muted-foreground">
-              현재는 로그인 시험 단계입니다. 게임 입장·베팅·충전·출금은 아직 활성화되지 않았습니다.
+              현재는 대기방 입장 시험 단계입니다. 카드·베팅·충전·출금은 아직 활성화되지 않았습니다.
             </p>
+            <div className="space-y-3 rounded-xl border border-white/10 p-3 text-left">
+              <h2 className="text-center font-semibold">테스트 대기방</h2>
+              <label className="block text-xs">게임 종류
+                <select value={roomMode} onChange={(e) => setRoomMode(e.target.value as typeof roomMode)}
+                  className="mt-1 w-full rounded-md border border-white/20 bg-background p-2">
+                  <option value="SUTDA2">2장 섯다</option>
+                  <option value="SUTDA3">3장 섯다</option>
+                  <option value="DORI">도리짓고땡</option>
+                </select>
+              </label>
+              <label className="block text-xs">방 이름
+                <input value={roomTitle} onChange={(e) => setRoomTitle(e.target.value)}
+                  maxLength={80} className="mt-1 w-full rounded-md border border-white/20 bg-background p-2" />
+              </label>
+              <label className="block text-xs">표시용 기본 베팅액 (실제 차감 없음)
+                <input value={roomBaseBet} onChange={(e) => setRoomBaseBet(e.target.value)}
+                  inputMode="decimal" className="mt-1 w-full rounded-md border border-white/20 bg-background p-2" />
+              </label>
+              <Button className="w-full" variant="gold" disabled={busy}
+                onClick={() => void roomAction({ action: "create", mode: roomMode,
+                  title: roomTitle, baseBet: roomBaseBet })}>
+                대기방 만들기
+              </Button>
+              <Button className="w-full" variant="table" disabled={busy}
+                onClick={() => void refreshRooms()}>목록 새로고침</Button>
+              {lobbyMessage && <p role="status" className="text-xs">{lobbyMessage}</p>}
+              {rooms.length === 0 && <p className="text-center text-xs text-muted-foreground">현재 열린 테스트 대기방이 없습니다.</p>}
+              {rooms.map((room) => <div key={room.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-white/10 p-2">
+                <div className="min-w-0 text-xs">
+                  <p className="truncate font-semibold">{room.title}</p>
+                  <p>{room.mode} · {room.seats}명 · 기본 {room.baseBet}P</p>
+                </div>
+                <Button variant="table" disabled={busy || room.joined}
+                  onClick={() => void roomAction({ action: "join", roomId: room.id })}>
+                  {room.joined ? "입장됨" : "입장"}
+                </Button>
+              </div>)}
+            </div>
             <Button className="h-11 w-full" variant="table" onClick={() => void signOut()} disabled={busy}>
               {busy ? "로그아웃 중…" : "로그아웃"}
             </Button>
