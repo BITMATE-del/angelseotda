@@ -87,7 +87,7 @@ export async function getPreviewTurnStatus(accountId:string,roomId:string) {
     db()`select actor_id,action_type from public.angel_game_actions
       where round_id=${roundId}::uuid and action_type in
       ('PREVIEW_PASS','PREVIEW_CHECK','PREVIEW_FOLD')
-      order by created_at,id`,
+      order by action_index NULLS FIRST,created_at,id`,
   ]);
   const ids=new Map(players.map(p=>[String(p['account_id']),Number(p['seat_number'])]));
   const events=actions.map(a=>({
@@ -154,7 +154,7 @@ export async function applyPreviewTurn(
       select actor_id,action_type from public.angel_game_actions
       where round_id=${roundId}::uuid and action_type in
         ('PREVIEW_PASS','PREVIEW_CHECK','PREVIEW_FOLD')
-      order by created_at,id
+      order by action_index NULLS FIRST,created_at,id
     `;
     const seatById=new Map(players.map(p=>[String(p['account_id']),Number(p['seat_number'])]));
     const seats=players.map(p=>Number(p['seat_number']));
@@ -170,9 +170,9 @@ export async function applyPreviewTurn(
     const next=derivePreviewTurnState(seats,[...events,{seat:current.turnSeat!,action}]);
     await tx`
       insert into public.angel_game_actions
-      (round_id,actor_id,request_id,action_type,amount)
+      (round_id,actor_id,request_id,action_type,amount,action_index)
       values(${roundId}::uuid,${accountId}::uuid,${requestId},
-        ${action==="FOLD"?"PREVIEW_FOLD":"PREVIEW_CHECK"},0)
+        ${action==="FOLD"?"PREVIEW_FOLD":"PREVIEW_CHECK"},0,${events.length+1})
     `;
     await tx`update public.angel_round_runtime
       set turn_seat=${next.turnSeat??current.turnSeat}
