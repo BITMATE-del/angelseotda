@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { loadTelegramSdk } from "@/lib/telegram/miniApp";
 import { doriBestMake } from "@/lib/game/dori/doriRules";
 
+interface RailwayWalletView {
+  balance:string;locked:string;available:string;
+  transactions:Array<{id:string;amount:string;type:string;createdAt:string}>;
+  depositEnabled:false;withdrawEnabled:false;settlementEnabled:false;
+}
 interface AngelAccount {
   id: string;
   telegramId: string;
@@ -48,6 +53,8 @@ type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 export function RailwayTelegramPreview() {
   const [screen, setScreen] = useState<Screen>("checking");
   const [account, setAccount] = useState<AngelAccount | null>(null);
+  const [walletView,setWalletView]=useState<RailwayWalletView | null>(null);
+  const [walletError,setWalletError]=useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [rooms, setRooms] = useState<PreviewRoom[]>([]);
@@ -119,6 +126,16 @@ export function RailwayTelegramPreview() {
     void authenticate();
     return () => { active = false; controller.abort(); };
   }, []);
+
+  async function refreshOwnWallet() {
+    try {
+      const res=await fetch("/api/public/railway-wallet",{credentials:"same-origin",cache:"no-store"});
+      if(!res.ok) throw new Error("Railway 지갑 정보를 가져오지 못했습니다.");
+      const payload=await res.json() as {wallet:RailwayWalletView};
+      setWalletView(payload.wallet);
+      setWalletError("");
+    }catch(e){setWalletError(e instanceof Error?e.message:"지갑 조회 실패");}
+  }
 
   async function refreshRooms() {
     try {
@@ -281,6 +298,27 @@ export function RailwayTelegramPreview() {
             <p className="text-lg font-semibold">{account.nickname}님, 인증이 완료됐습니다.</p>
             <p className="text-sm text-muted-foreground">계정 잔액</p>
             <p className="font-display text-2xl text-gold">{account.balance} P</p>
+            <div className="space-y-2 rounded-lg border border-white/10 p-3 text-left">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Railway 지갑</h2>
+                <Button variant="table" size="sm" disabled={busy}
+                  onClick={()=>void refreshOwnWallet()}>내역 조회</Button>
+              </div>
+              {walletError && <p role="alert" className="text-xs">{walletError}</p>}
+              {walletView && (
+                <>
+                  <p className="text-xs">총잔액 {walletView.balance}P · 잠금 {walletView.locked}P · 사용가능 {walletView.available}P</p>
+                  <p className="text-xs text-muted-foreground">충전·출금·정산은 현재 비활성화되어 있습니다.</p>
+                  {walletView.transactions.length===0 ?
+                    <p className="text-xs text-muted-foreground">거래 기록이 없습니다.</p> :
+                    walletView.transactions.map(tx=>(
+                      <div className="flex justify-between gap-2 text-xs" key={tx.id}>
+                        <span>{tx.type}</span><span>{tx.amount}P</span>
+                      </div>
+                    ))}
+                </>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               현재는 대기방 입장 시험 단계입니다. 카드·베팅·충전·출금은 아직 활성화되지 않았습니다.
             </p>
