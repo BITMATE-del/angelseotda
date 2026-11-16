@@ -22,7 +22,8 @@ interface PreparedRound {
 interface PrivatePreview {
   roundId: string; phase: "DEALT_PREVIEW"; mySeat: number;
   turnSeat: number; myCards: string[]; playerCount: number;
-  acceptsBets: false; realGameStarted: false;
+  acceptsBets: false; passes: number; didPass: boolean;
+  previewComplete: boolean; realGameStarted: false;
 }
 type Screen = "checking" | "outside" | "ready" | "unavailable" | "error";
 
@@ -172,6 +173,9 @@ export function RailwayTelegramPreview() {
       } else if (payload['action'] === "dealPreview" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
         setLobbyMessage("테스트 카드가 비공개로 배분됐습니다. 실제 게임 시작은 아닙니다.");
+      } else if (payload['action'] === "previewPass" && payload['roomId']) {
+        await refreshRoomDetail(payload['roomId']);
+        setLobbyMessage("테스트 턴을 넘겼습니다. 실제 베팅은 이루어지지 않았습니다.");
       }
     } catch (error) {
       setLobbyMessage(error instanceof Error ? error.message : "입장 실패");
@@ -297,8 +301,23 @@ export function RailwayTelegramPreview() {
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        턴 기준 좌석: {privatePreview.turnSeat}번 · 다른 회원 카드는 공개되지 않습니다.
-                        실제 베팅과 정산은 비활성화되어 있습니다.
+                        현재 턴: {privatePreview.turnSeat}번 · 통과 {privatePreview.passes}/{privatePreview.playerCount}명
+                      </p>
+                      {privatePreview.previewComplete ? (
+                        <p role="status" className="text-xs">모든 참가자의 테스트 턴이 완료됐습니다.</p>
+                      ) : privatePreview.mySeat === privatePreview.turnSeat && !privatePreview.didPass ? (
+                        <Button variant="gold" disabled={busy} className="w-full"
+                          onClick={() => void roomAction({
+                            action: "previewPass", roomId: selectedRoomId,
+                            requestId: crypto.randomUUID(),
+                          })}>
+                          테스트 턴 넘기기 (포인트 변동 없음)
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">다른 참가자의 테스트 턴을 기다리는 중입니다.</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        다른 회원 카드는 공개되지 않습니다. 베팅과 정산은 비활성화되어 있습니다.
                       </p>
                     </div>
                   )}
