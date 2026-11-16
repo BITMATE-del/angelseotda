@@ -61,7 +61,7 @@ export function evaluatePreviewShowdown(
     raw.push({accountId:active[0]!.accountId,seat:active[0]!.seat,
       handName:"상대 전원 다이",handCode:"FOLD_WIN",rank:1});
   } else if(mode==="SUTDA2" || mode==="SUTDA3"){
-    const hands=[];
+    const hands: Array<ReturnType<typeof evaluateSutda2>>=[];
     for(const p of active){
       if(mode==="SUTDA3" && !selectionMatches(p.cards,p.selectedPair??[],2))
         return blocked("SELECTION_REQUIRED",[]);
@@ -75,7 +75,7 @@ export function evaluatePreviewShowdown(
     active.forEach((p,i)=>raw.push({accountId:p.accountId,seat:p.seat,
       handName:hands[i]!.name,handCode:hands[i]!.code,rank:scores[i]!}));
   } else {
-    const hands=[];
+    const hands: Array<{hand:ReturnType<typeof doriBestMake>["hand"];makeTotal:number|null}>=[];
     for(const p of active){
       const possible=doriBestMake(p.cards);
       if(!possible.made) {
