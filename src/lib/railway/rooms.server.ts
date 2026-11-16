@@ -77,7 +77,7 @@ export async function joinStagingRoom(accountId: string, roomId: string) {
   return sql.begin(async tx => {
     // Serializes seat assignment for one room.
     const room = await tx`
-      select id, status from public.angel_rooms
+      select id, status, mode from public.angel_rooms
       where id = ${roomId}::uuid for update
     `;
     if (!room.length || room[0]?.['status'] !== "WAITING")
@@ -87,13 +87,20 @@ export async function joinStagingRoom(accountId: string, roomId: string) {
       where room_id=${roomId}::uuid and account_id=${accountId}::uuid
     `;
     if (existing.length) return { roomId, seatNumber: Number(existing[0]?.['seat_number']) };
+    const preparing = await tx`
+      select id from public.angel_rounds
+      where room_id=${roomId}::uuid and phase='PREPARING'
+        and settlement_status='PENDING' limit 1
+    `;
+    if (preparing.length) throw new Error("ROUND_ALREADY_PREPARED");
     const occupied = await tx`
       select seat_number from public.angel_room_seats
       where room_id=${roomId}::uuid order by seat_number
     `;
     const filled = new Set(occupied.map(r => Number(r['seat_number'])));
     let seatNumber = 0;
-    for (let i = 1; i <= MAX_SEATS; i++) if (!filled.has(i)) { seatNumber=i; break; }
+    const maxSeats = room[0]?.['mode'] === "DORI" ? 4 : MAX_SEATS;
+    for (let i = 1; i <= maxSeats; i++) if (!filled.has(i)) { seatNumber=i; break; }
     if (!seatNumber) throw new Error("ROOM_FULL");
     await tx`
       insert into public.angel_room_seats(room_id,seat_number,account_id)
@@ -167,6 +174,12 @@ export async function leaveStagingRoom(accountId: string, roomId: string) {
     const room = roomRows[0];
     if (!room || room['status'] !== "WAITING")
       throw new Error("ROOM_UNAVAILABLE");
+    const preparing = await tx`
+      select id from public.angel_rounds
+      where room_id=${roomId}::uuid and phase='PREPARING'
+        and settlement_status='PENDING' limit 1
+    `;
+    if (preparing.length) throw new Error("ROUND_ALREADY_PREPARED");
     const removed = await tx`
       delete from public.angel_room_seats
       where room_id=${roomId}::uuid and account_id=${accountId}::uuid
