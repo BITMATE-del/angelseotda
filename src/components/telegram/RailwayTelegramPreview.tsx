@@ -132,7 +132,9 @@ export function RailwayTelegramPreview() {
       });
       if (!response.ok) throw new Error("방 생성·입장에 실패했습니다.");
       const data = await response.json() as { roomId?: string; seatNumber?: number };
-      setLobbyMessage(`대기방에 ${data.seatNumber ?? "-"}번 좌석으로 입장했습니다. 게임은 아직 시작할 수 없습니다.`);
+      setLobbyMessage(payload.action === "leave"
+        ? "대기방에서 나왔습니다."
+        : `대기방에 ${data.seatNumber ?? "-"}번 좌석으로 입장했습니다. 게임은 아직 시작할 수 없습니다.`);
       await refreshRooms();
       if (payload.action === "leave") {
         setSelectedRoomId(null);
