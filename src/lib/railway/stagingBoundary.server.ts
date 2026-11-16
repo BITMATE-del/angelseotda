@@ -9,6 +9,7 @@ export const STAGING_PAGE_PATH = "/telegram";
 const STAGING_ENDPOINTS = new Set([
   "/api/public/railway-auth",
   "/api/public/railway-rooms",
+  "/api/public/railway-wallet",
 ]);
 const STATIC_PREFIXES = ["/assets/","/_build/","/brand/","/cards/","/fonts/"];
 const STATIC_FILES = new Set(["/favicon.png","/robots.txt"]);
