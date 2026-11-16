@@ -8,11 +8,11 @@ import { verifyTelegramInitData } from "@/lib/telegram/verify.server";
 let pool: ReturnType<typeof postgres> | undefined;
 
 function database() {
-  if (process.env.BACKEND_MODE !== "railway_postgres_staging" ||
-      process.env.RAILWAY_ENVIRONMENT_NAME !== "staging") {
+  if (process.env['BACKEND_MODE'] !== "railway_postgres_staging" ||
+      process.env['RAILWAY_ENVIRONMENT_NAME'] !== "staging") {
     throw new Error("RAILWAY_STAGING_ONLY");
   }
-  const url = process.env.DATABASE_URL;
+  const url = process.env['DATABASE_URL'];
   if (!url) throw new Error("DATABASE_NOT_CONFIGURED");
   pool ??= postgres(url, { max: 5, connect_timeout: 10, prepare: false });
   return pool;
@@ -51,21 +51,21 @@ export async function findOrCreateRailwayTelegramAccount(
       returning id, telegram_id, nickname, status
     `;
     const account = accounts[0];
-    if (!account || account.status !== "ACTIVE") throw new Error("ACCOUNT_NOT_ACTIVE");
+    if (!account || account['status'] !== "ACTIVE") throw new Error("ACCOUNT_NOT_ACTIVE");
     await tx`
       insert into public.angel_wallets (account_id, balance)
-      values (${account.id}, 0)
+      values (${account['id']}, 0)
       on conflict (account_id) do nothing
     `;
     const wallets = await tx`
-      select balance from public.angel_wallets where account_id = ${account.id}
+      select balance from public.angel_wallets where account_id = ${account['id']}
     `;
     return {
-      id: String(account.id),
-      telegramId: String(account.telegram_id),
-      nickname: String(account.nickname),
-      balance: String(wallets[0]?.balance ?? "0"),
-      status: String(account.status),
+      id: String(account['id']),
+      telegramId: String(account['telegram_id']),
+      nickname: String(account['nickname']),
+      balance: String(wallets[0]?.['balance'] ?? "0"),
+      status: String(account['status']),
     };
   });
 }
