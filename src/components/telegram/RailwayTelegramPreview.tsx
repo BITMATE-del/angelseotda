@@ -42,6 +42,12 @@ type PreviewOutcome={
   passed?:number;players?:number;reason?:string;winnerSeats?:number[];
   realSettlement:false;
 };
+type SimulatedShowdown={
+  status:"WAITING_FOR_SIMULATION"|"WAITING_FOR_BETS"|"BLOCKED"|"CALCULATED";
+  reason?:string;pot?:string;fee?:string;
+  winnerSeats?:number[];payouts?:Array<{seat:number;amount:string}>;
+  realSettlement:false;
+};
 interface WagerSimulation {
   previewOnly:true;realSettlement:false;mySeat:number;turnSeat:number|null;
   complete:boolean;samplePot:string;sampleCurrentBet:string;
@@ -75,6 +81,7 @@ export function RailwayTelegramPreview() {
   const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
   const [betPreview, setBetPreview] = useState<BetDryRun | null>(null);
   const [wagerSimulation,setWagerSimulation] = useState<WagerSimulation | null>(null);
+  const [simulatedShowdown,setSimulatedShowdown]=useState<SimulatedShowdown | null>(null);
   const [finalChoice,setFinalChoice] = useState<MyFinalChoice | null>(null);
   const [outcome,setOutcome] = useState<PreviewOutcome | null>(null);
   const [turnStatus,setTurnStatus] = useState<PreviewTurnStatus | null>(null);
@@ -175,12 +182,14 @@ export function RailwayTelegramPreview() {
         finalChoice: MyFinalChoice | null;outcome:PreviewOutcome | null;
         turnStatus:PreviewTurnStatus | null;
         wagerSimulation:WagerSimulation | null;
+        simulatedShowdown:SimulatedShowdown | null;
       };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
       setPrivatePreview(data.privatePreview);
       setBetPreview(data.betPreview);
       setWagerSimulation(data.wagerSimulation);
+      setSimulatedShowdown(data.simulatedShowdown);
       setFinalChoice(data.finalChoice);
       setOutcome(data.outcome);
       setTurnStatus(data.turnStatus);
@@ -193,6 +202,7 @@ export function RailwayTelegramPreview() {
       setPrivatePreview(null);
       setBetPreview(null);
       setWagerSimulation(null);
+      setSimulatedShowdown(null);
       setFinalChoice(null);
       setOutcome(null);
       setTurnStatus(null);
@@ -551,6 +561,25 @@ export function RailwayTelegramPreview() {
                           </>
                         )}
                       </div>
+                      {simulatedShowdown && wagerSimulation?.complete && (
+                        <div className="space-y-2 rounded-lg border border-white/10 p-3">
+                          <h4 className="text-sm font-semibold">가상 베팅 정산 계산</h4>
+                          {simulatedShowdown.status==="CALCULATED" ? (
+                            <>
+                              <p className="text-xs">가상 POT {simulatedShowdown.pot}P · 계산 수수료 {simulatedShowdown.fee}P</p>
+                              <p className="text-xs">예비 승리 좌석: {simulatedShowdown.winnerSeats?.join(", ")}번</p>
+                              {simulatedShowdown.payouts?.map(p=>(
+                                <p className="text-xs" key={p.seat}>{p.seat}번 좌석 가상 지급 {p.amount}P</p>
+                              ))}
+                            </>
+                          ):simulatedShowdown.status==="BLOCKED" ? (
+                            <p className="text-xs">정산 계산 보류: {simulatedShowdown.reason} · 패 선택·재경기 검토 필요</p>
+                          ):(
+                            <p className="text-xs">가상 베팅 완료 후 결과를 계산합니다.</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">계산 결과만 표시하며 실제 회원 지갑에는 지급하지 않습니다.</p>
+                        </div>
+                      )}
                       {betPreview && (
                         <div className="space-y-2 rounded-lg border border-white/10 p-2">
                           <p className="text-xs font-semibold">베팅 금액 계산 시험 · 실제 차감 없음</p>
