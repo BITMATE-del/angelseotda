@@ -42,6 +42,12 @@ type PreviewOutcome={
   passed?:number;players?:number;reason?:string;winnerSeats?:number[];
   realSettlement:false;
 };
+interface WagerSimulation {
+  previewOnly:true;realSettlement:false;mySeat:number;turnSeat:number|null;
+  complete:boolean;samplePot:string;sampleCurrentBet:string;
+  sampleCredit:string;sampleContributed:string;
+  foldedSeats:number[];allInSeats:number[];availableActions:string[];
+}
 interface BetDryRun {
   previewOnly: true; canExecute: false; monetaryEffects: false;
   isMyTurn: boolean;
@@ -68,6 +74,7 @@ export function RailwayTelegramPreview() {
   const [preparedRound, setPreparedRound] = useState<PreparedRound | null>(null);
   const [privatePreview, setPrivatePreview] = useState<PrivatePreview | null>(null);
   const [betPreview, setBetPreview] = useState<BetDryRun | null>(null);
+  const [wagerSimulation,setWagerSimulation] = useState<WagerSimulation | null>(null);
   const [finalChoice,setFinalChoice] = useState<MyFinalChoice | null>(null);
   const [outcome,setOutcome] = useState<PreviewOutcome | null>(null);
   const [turnStatus,setTurnStatus] = useState<PreviewTurnStatus | null>(null);
@@ -167,11 +174,13 @@ export function RailwayTelegramPreview() {
         privatePreview: PrivatePreview | null; betPreview: BetDryRun | null;
         finalChoice: MyFinalChoice | null;outcome:PreviewOutcome | null;
         turnStatus:PreviewTurnStatus | null;
+        wagerSimulation:WagerSimulation | null;
       };
       setRoomDetail(data.room);
       setPreparedRound(data.preparedRound);
       setPrivatePreview(data.privatePreview);
       setBetPreview(data.betPreview);
+      setWagerSimulation(data.wagerSimulation);
       setFinalChoice(data.finalChoice);
       setOutcome(data.outcome);
       setTurnStatus(data.turnStatus);
@@ -183,6 +192,7 @@ export function RailwayTelegramPreview() {
       setPreparedRound(null);
       setPrivatePreview(null);
       setBetPreview(null);
+      setWagerSimulation(null);
       setFinalChoice(null);
       setOutcome(null);
       setTurnStatus(null);
@@ -242,6 +252,12 @@ export function RailwayTelegramPreview() {
       } else if (payload['action'] === "dealPreview" && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
         setLobbyMessage("테스트 카드가 비공개로 배분됐습니다. 실제 게임 시작은 아닙니다.");
+      } else if (payload['action']==="startWagerSimulation" && payload['roomId']) {
+        await refreshRoomDetail(payload['roomId']);
+        setLobbyMessage("가상 베팅 시험이 시작됐습니다. 실제 포인트는 변하지 않습니다.");
+      } else if (payload['action']==="wagerSimulationAction" && payload['roomId']) {
+        await refreshRoomDetail(payload['roomId']);
+        setLobbyMessage("가상 베팅 결과가 기록됐습니다. 실제 차감은 없습니다.");
       } else if (["previewPass","previewCheck","previewFold"].includes(payload['action'] ?? "") && payload['roomId']) {
         await refreshRoomDetail(payload['roomId']);
         setLobbyMessage("테스트 턴을 넘겼습니다. 실제 베팅은 이루어지지 않았습니다.");
@@ -490,6 +506,51 @@ export function RailwayTelegramPreview() {
                           )}
                         </div>
                       )}
+                      <div className="space-y-2 rounded-lg border border-white/10 p-3">
+                        <h4 className="text-sm font-semibold">베팅 진행 시험</h4>
+                        <p className="text-xs text-muted-foreground">
+                          별도 가상 잔액만 사용합니다. 실제 회원 지갑·POT·원장은 변경되지 않습니다.
+                        </p>
+                        {!wagerSimulation && roomDetail.ownerId===account.id && (
+                          <Button variant="gold" className="w-full" disabled={busy}
+                            onClick={()=>void roomAction({
+                              action:"startWagerSimulation",roomId:selectedRoomId,
+                            })}>가상 베팅 시작</Button>
+                        )}
+                        {wagerSimulation && (
+                          <>
+                            <p className="text-xs">
+                              가상 POT {wagerSimulation.samplePot}P · 기준 베팅 {wagerSimulation.sampleCurrentBet}P
+                            </p>
+                            <p className="text-xs">
+                              내 가상 잔액 {wagerSimulation.sampleCredit}P · 내 베팅 {wagerSimulation.sampleContributed}P
+                            </p>
+                            <p className="text-xs">
+                              {wagerSimulation.complete?"가상 베팅 구간 종료":
+                                `현재 차례: ${wagerSimulation.turnSeat}번 좌석`}
+                            </p>
+                            {wagerSimulation.foldedSeats.length>0 && (
+                              <p className="text-xs">다이: {wagerSimulation.foldedSeats.join(", ")}번 좌석</p>
+                            )}
+                            {wagerSimulation.availableActions.length>0 && (
+                              <div className="grid grid-cols-2 gap-2">
+                                {wagerSimulation.availableActions.map(action=>(
+                                  <Button key={action} variant="table" disabled={busy}
+                                    onClick={()=>void roomAction({
+                                      action:"wagerSimulationAction",
+                                      roomId:selectedRoomId,
+                                      wagerAction:action,requestId:crypto.randomUUID(),
+                                    })}>{({
+                                      die:"다이",check:"체크",call:"콜",ping:"삥",
+                                      ttadang:"따당",half:"하프",quarter:"쿼터",
+                                      all_in:"올인",
+                                    } as Record<string,string>)[action]??action}</Button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                       {betPreview && (
                         <div className="space-y-2 rounded-lg border border-white/10 p-2">
                           <p className="text-xs font-semibold">베팅 금액 계산 시험 · 실제 차감 없음</p>
