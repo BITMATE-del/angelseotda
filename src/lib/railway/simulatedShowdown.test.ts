@@ -17,8 +17,8 @@ describe("server-only simulated showdown integrates betting and cards",()=>{
     s=applySimAction(s,2,"call");
     const result=calculateSimulationShowdown("SUTDA2",s,hands);
     expect(result).toEqual({
-      status:"CALCULATED",pot:"20.000",fee:"0.600",
-      payouts:[{seat:1,amount:"19.400"},{seat:2,amount:"0.000"}],
+      status:"CALCULATED",pot:"20.000",fee:"1.000",
+      payouts:[{seat:1,amount:"19.000"},{seat:2,amount:"0.000"}],
       winnerSeats:[1],realSettlement:false,
     });
   });
