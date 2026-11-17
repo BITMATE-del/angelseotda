@@ -21,7 +21,8 @@ export function isRailwayIsolatedStaging(environment:NodeJS.ProcessEnv):boolean{
 }
 export type StagingDecision="ALLOW"|"REDIRECT"|"DENY";
 export function classifyStagingRequest(pathname:string,method:string):StagingDecision{
-  if(pathname==="/" && READ_METHODS.has(method))return "REDIRECT";
+  // Old signup links on this preview must use verified Telegram sign-in, never legacy Supabase auth.
+  if((pathname==="/" || pathname==="/auth") && READ_METHODS.has(method))return "REDIRECT";
   if(STAGING_ENDPOINTS.has(pathname))return "ALLOW";
   if(pathname===STAGING_PAGE_PATH && READ_METHODS.has(method))return "ALLOW";
   if(READ_METHODS.has(method) &&
