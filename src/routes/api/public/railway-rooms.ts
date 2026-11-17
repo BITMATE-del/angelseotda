@@ -62,13 +62,17 @@ export const Route = createFileRoute("/api/public/railway-rooms")({
             const {getOwnWagerSimulation}=await import("@/lib/railway/wagerSimulationStore.server");
             const wagerSimulation=privatePreview
               ? await getOwnWagerSimulation(account.id,roomId):null;
+            const {readOwnSimulationShowdown}=
+              await import("@/lib/railway/simulatedShowdown.server");
+            const simulatedShowdown=privatePreview
+              ? await readOwnSimulationShowdown(account.id,roomId):null;
             const { readPreviewOutcome } = await import("@/lib/railway/outcomePreview.server");
             const outcome = privatePreview
               ? await readPreviewOutcome(account.id, roomId) : null;
             return json({ room: await getStagingRoomDetail(account.id, roomId),
               preparedRound: await getStagingPreparedRound(account.id, roomId),
               privatePreview, betPreview, finalChoice, outcome, turnStatus,
-              wagerSimulation });
+              wagerSimulation, simulatedShowdown });
           }
           return json({ rooms: await getStagingRooms(account.id) });
         } catch (error) {
