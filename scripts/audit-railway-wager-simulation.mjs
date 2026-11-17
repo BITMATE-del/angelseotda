@@ -5,6 +5,7 @@
  */
 import {randomInt,randomUUID} from "node:crypto";
 import postgres from "postgres";
+import {calculateSimulationShowdown} from "../src/lib/railway/simulatedShowdown.server.ts";
 import {
   initializeWagerSimulation,applyWagerSimulation,
 } from "../src/lib/railway/wagerSimulationStore.server.ts";
@@ -51,6 +52,13 @@ try{
           values(${roundId}::uuid,${account}::uuid,${seat})
         `;
       }
+      await tx`
+        insert into public.angel_round_private_hands(round_id,account_id,card_ids)
+        values
+        (${roundId}::uuid,${a}::uuid,${tx.json(["03-gwang","08-gwang"])}),
+        (${roundId}::uuid,${b}::uuid,${tx.json(["02-a","05-a"])}),
+        (${roundId}::uuid,${c}::uuid,${tx.json(["04-a","06-a"])})
+      `;
       const started=await initializeWagerSimulation(tx,a,roomId);
       assert(started.turnSeat===1 && started.samplePot==="0.000","start");
       await rejects(()=>initializeWagerSimulation(tx,b,roomId),"OWNER_ONLY");
@@ -82,6 +90,29 @@ try{
       assert(Number(inspect[0]?.['receipts'])===0,"no real debit receipt");
       assert(Number(inspect[0]?.['real_committed'])===0,"real committed unchanged");
       assert(Number(inspect[0]?.['sim_actions'])===4,"exactly four actions");
+      const saved=await tx`
+        select state from public.angel_wager_simulations
+        where round_id=${roundId}::uuid
+      `;
+      const privateHands=await tx`
+        select p.account_id,p.seat_number,h.card_ids
+        from public.angel_round_players p
+        join public.angel_round_private_hands h
+          on h.round_id=p.round_id and h.account_id=p.account_id
+        where p.round_id=${roundId}::uuid order by p.seat_number
+      `;
+      const showdown=calculateSimulationShowdown("SUTDA2",saved[0]['state'],
+        privateHands.map(h=>({
+          accountId:String(h['account_id']),seat:Number(h['seat_number']),
+          cards:h['card_ids'],
+        })));
+      assert(showdown.status==="CALCULATED","server-only showdown");
+      assert(showdown.pot==="30.000"&&showdown.fee==="0.900",
+        "virtual pot and fee match 3 percent");
+      assert(showdown.winnerSeats?.join(",")==="1","38-gwang wins");
+      assert(showdown.payouts?.find(p=>p.seat===1)?.amount==="29.100",
+        "virtual payout reconciled");
+      console.log("WAGER_SIM_SHOWDOWN_AUDIT_PASS");
       console.log("WAGER_SIM_DB_AUDIT_PASS");
       throw new Error(marker);
     });
