@@ -132,7 +132,7 @@ export function calculateOriginalTtaengEscrow(input:TtaengRoundInput):TtaengResu
     paidBy[p]=paid;refunds[p]=max-paid;
   }
   const bonus=sum(Object.values(paidBy));
-  if(sum(Object.values(refunds))+bonus!==max*BigInt(participants))
+  if(sum(Object.values(refunds))+bonus!==max*BigInt(participants.length))
     throw new Error("TTAENG_ESCROW_UNBALANCED");
   return {bonusPerLoser:perLoser,winnerBonus:bonus,refunds,paidBy,operatorFee:0n};
 }
