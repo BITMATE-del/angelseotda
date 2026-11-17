@@ -204,7 +204,10 @@ export async function applyRollbackOnlySettlement(tx:Tx,roomId:string) {
     select coalesce(sum(amount),0)::numeric as total
     from public.angel_ledger_entries where event_id=${eventId}::uuid
   `;
-  if(toMilli(String(reconciliation[0]?.['total']))!==-fee)
+  const netText=String(reconciliation[0]?.['total']);
+  const netAmount=netText.startsWith("-")
+    ?-toMilli(netText.slice(1)):toMilli(netText);
+  if(netAmount!==-fee)
     throw new Error("LEDGER_RAKE_RECONCILIATION_FAILED");
   return {reused:false,pot:calculated.pot,fee:calculated.fee,
     payouts,ledgerEventId:eventId,rollbackMandatory:true};
