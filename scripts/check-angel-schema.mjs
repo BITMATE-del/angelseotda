@@ -23,7 +23,7 @@ try {
                   'payments_enabled','settlement_enabled')
   `;
   const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
-  if (tables[0]?.total !== 19
+  if (tables[0]?.total !== 20
     || Number(map.deposit_fee_rate) !== 0
     || Number(map.withdrawal_fee_rate) !== 0
     || Number(map.pot_rake_rate) !== 0.03
@@ -118,9 +118,25 @@ try {
      Number(settlementEvents[0]?.['n'])!==0)
     throw new Error("SETTLEMENT_AUDIT_NOT_ROLLED_BACK");
   console.log("SETTLEMENT_ROLLBACK_ONLY");
+  const escrowMigration=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0009_ttaeng_rollback_audit'
+  `;
+  const escrowCount=await db`
+    select count(*)::integer as n from public.angel_ttaeng_audit_escrows
+  `;
+  const escrowLedger=await db`
+    select count(*)::integer as n from public.angel_ledger_events
+    where event_type='STAGING_TTAENG_AUDIT'
+  `;
+  if(Number(escrowMigration[0]?.['n'])!==1 ||
+     Number(escrowCount[0]?.['n'])!==0 ||
+     Number(escrowLedger[0]?.['n'])!==0)
+    throw new Error("TTAENG_AUDIT_RESIDUE_FOUND");
+  console.log("TTAENG_ROLLBACK_ONLY");
   console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
-  console.log("ANGEL_TABLE_COUNT=19");
+  console.log("ANGEL_TABLE_COUNT=20");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
 } catch(e) {
   console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
