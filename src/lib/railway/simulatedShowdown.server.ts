@@ -12,6 +12,7 @@ import {isRoomUuid} from "./rooms.server";
 import {toMilli,fromMilli} from "./bettingPreview.server";
 import {evaluatePreviewShowdown,type PreviewShowdownPlayer,type PreviewMode} from "./showdownPreview.server";
 import type {SimState} from "./wagerSimulation.server";
+import {calculateOriginalRake} from "./originalGameFeePolicy.server";
 
 type HandRow={
  accountId:string;seat:number;cards:readonly string[];
@@ -52,12 +53,45 @@ export function calculateSimulationShowdown(
   const outcome=evaluatePreviewShowdown(mode,players);
   if(outcome.status==="BLOCKED")
     return {status:"BLOCKED",reason:outcome.reason,realSettlement:false};
-  const payoutEntries=outcome.financialPreview.payouts;
+  // Legacy source 20261113093100: rake is 3% of gross WIN payouts
+  // rounded in whole points. No rake on refunded uncalled bets.
+  // The provisional side-pot helper computed its own 0.001P rake; we
+  // discard that fee and reconstruct gross awards from its pot layers.
+  const grossBySeat=new Map(players.map(p=>[p.seat,0n]));
+  for(const layer of outcome.financialPreview.pots){
+    if(layer.winnerSeats.length!==1)return {
+      status:"BLOCKED",reason:"REMATCH_REQUIRED",realSettlement:false,
+    };
+    const seat=layer.winnerSeats[0]!;
+    grossBySeat.set(seat,(grossBySeat.get(seat)??0n)+toMilli(layer.amount));
+  }
+  const refunds=new Map(players.map(p=>[
+    p.seat,toMilli(outcome.financialPreview.uncalledRefunds[p.accountId]??"0.000"),
+  ]));
+  const originalGross=[...grossBySeat].filter(([,amount])=>amount>0n);
+  // The original ledger uses integer-point credits. Do not invent a
+  // fractional-point rounding policy until explicitly reconciled.
+  if(originalGross.some(([,amount])=>amount%1000n!==0n))
+    return {status:"BLOCKED",reason:"LEGACY_POINT_PRECISION_REVIEW",realSettlement:false};
+  const seatByAccount=new Map(players.map(p=>[p.accountId,p.seat]));
+  const accountBySeat=new Map(players.map(p=>[p.seat,p.accountId]));
+  const winners=originalGross.map(([seat,gross])=>({
+    accountId:accountBySeat.get(seat)!,grossPayout:gross/1000n,
+    // Affiliate identity is not yet migrated; no affiliate credit posted.
+    affiliateId:null,
+  }));
+  const rake=winners.length>0
+    ?calculateOriginalRake(winners,mode,true):null;
+  const fee=(rake?.feeTotal??0n)*1000n;
+  const netBySeat=new Map(players.map(p=>[p.seat,refunds.get(p.seat)??0n]));
+  for(const w of rake?.winners??[]){
+    const seat=seatByAccount.get(w.accountId)!;
+    netBySeat.set(seat,(netBySeat.get(seat)??0n)+w.netPayout*1000n);
+  }
   const payouts=players.map(p=>({
-    seat:p.seat,amount:payoutEntries[p.accountId]??"0.000",
+    seat:p.seat,amount:fromMilli(netBySeat.get(p.seat)??0n),
   }));
   const payoutSum=payouts.reduce((s,p)=>s+toMilli(p.amount),0n);
-  const fee=toMilli(outcome.financialPreview.fee);
   if(payoutSum+fee!==contributions)
     throw new Error("SIM_SHOWDOWN_ACCOUNTING_IMBALANCE");
   const high=Math.max(...outcome.hands.map(h=>h.rank));
