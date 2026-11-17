@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { enforceRailwayStagingBoundary } from "./lib/railway/stagingBoundary.server";
+import { enforceRailwayStagingBoundary, isRailwayIsolatedStaging } from "./lib/railway/stagingBoundary.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -48,6 +48,10 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Isolated staging liveness probe: no authentication, wallet, or database side effects.
+      if (isRailwayIsolatedStaging(process.env) && new URL(request.url).pathname === "/healthz" && request.method === "GET") {
+        return new Response("ok", { status: 200, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+      }
       const blocked = enforceRailwayStagingBoundary(request,process.env);
       if (blocked) return blocked;
       const handler = await getServerEntry();
