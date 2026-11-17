@@ -81,7 +81,7 @@ export async function initializeWagerSimulation(
     const state=newSimState(players.map(p=>p.seat),round.baseBet);
     await tx`
       insert into public.angel_wager_simulations(round_id,state,revision)
-      values(${round.roundId}::uuid,${tx.json(state)},0)
+      values(${round.roundId}::uuid,${tx.json(JSON.parse(JSON.stringify(state)))},0)
     `;
     return {...simPublicView(state,players.find(p=>p.accountId===accountId)!.seat),
       reused:false};
@@ -143,7 +143,7 @@ export async function applyWagerSimulation(
     const revision=Number(rows[0]['revision'])+1;
     await tx`
       update public.angel_wager_simulations
-      set state=${tx.json(next)},revision=${revision},updated_at=now()
+      set state=${tx.json(JSON.parse(JSON.stringify(next)))},revision=${revision},updated_at=now()
       where round_id=${round.roundId}::uuid
     `;
     await tx`
