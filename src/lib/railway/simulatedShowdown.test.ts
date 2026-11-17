@@ -37,6 +37,15 @@ describe("server-only simulated showdown integrates betting and cards",()=>{
       ]);
     }
   });
+  it("blocks fractional winning payouts until original integer-point rule is reconciled",()=>{
+    let s=newSimState([1,2],"1.111");
+    s=applySimAction(s,1,"ping");
+    s=applySimAction(s,2,"call");
+    expect(calculateSimulationShowdown("SUTDA2",s,hands)).toEqual({
+      status:"BLOCKED",reason:"LEGACY_POINT_PRECISION_REVIEW",
+      realSettlement:false,
+    });
+  });
   it("refuses mismatched or duplicate private hand mapping",()=>{
     let s=newSimState([1,2],"10");
     s=applySimAction(s,1,"ping");s=applySimAction(s,2,"call");
