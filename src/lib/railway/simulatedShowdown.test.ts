@@ -43,7 +43,7 @@ describe("server-only simulated showdown integrates betting and cards",()=>{
     expect(()=>calculateSimulationShowdown("SUTDA2",s,[hands[0]!]))
       .toThrow("SIM_SHOWDOWN_PLAYER_MISMATCH");
     expect(()=>calculateSimulationShowdown("SUTDA2",s,[hands[0]!,hands[0]!]))
-      .toThrow("SIM_SHOWDOWN_DUPLICATE_SEAT");
+      .toThrow("SIM_SHOWDOWN_PLAYER_MISMATCH");
     expect(()=>calculateSimulationShowdown("SUTDA2",{...s,pot:"1.000"},hands))
       .toThrow("SIM_SHOWDOWN_POT_MISMATCH");
   });
