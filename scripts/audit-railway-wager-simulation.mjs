@@ -107,10 +107,10 @@ try{
           cards:h['card_ids'],
         })));
       assert(showdown.status==="CALCULATED","server-only showdown");
-      assert(showdown.pot==="30.000"&&showdown.fee==="0.900",
-        "virtual pot and fee match 3 percent");
+      assert(showdown.pot==="30.000"&&showdown.fee==="1.000",
+        "original whole-point 3 percent rake");
       assert(showdown.winnerSeats?.join(",")==="1","38-gwang wins");
-      assert(showdown.payouts?.find(p=>p.seat===1)?.amount==="29.100",
+      assert(showdown.payouts?.find(p=>p.seat===1)?.amount==="29.000",
         "virtual payout reconciled");
       console.log("WAGER_SIM_SHOWDOWN_AUDIT_PASS");
       console.log("WAGER_SIM_DB_AUDIT_PASS");
