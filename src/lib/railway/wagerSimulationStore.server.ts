@@ -61,7 +61,11 @@ async function members(tx:postgres.TransactionSql,roundId:string){
 }
 export async function startWagerSimulation(accountId:string,roomId:string){
   if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
-  return db().begin(async tx=>{
+  return db().begin(tx=>initializeWagerSimulation(tx,accountId,roomId));
+}
+export async function initializeWagerSimulation(
+  tx:postgres.TransactionSql,accountId:string,roomId:string
+){
     const round=await lockedRound(tx,roomId);
     if(round.ownerId!==accountId)throw new Error("OWNER_ONLY");
     const players=await members(tx,round.roundId);
@@ -81,7 +85,6 @@ export async function startWagerSimulation(accountId:string,roomId:string){
     `;
     return {...simPublicView(state,players.find(p=>p.accountId===accountId)!.seat),
       reused:false};
-  });
 }
 /** Read strictly caller's synthetic credit; never expose other player credit. */
 export async function getOwnWagerSimulation(accountId:string,roomId:string){
@@ -107,7 +110,15 @@ export async function performWagerSimulation(
   if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
   if(!requestPattern.test(requestId))throw new Error("INVALID_REQUEST_ID");
   if(!ACTIONS.has(action))throw new Error("INVALID_SIM_ACTION");
-  return db().begin(async tx=>{
+  return db().begin(tx=>applyWagerSimulation(tx,accountId,roomId,requestId,action));
+}
+export async function applyWagerSimulation(
+  tx:postgres.TransactionSql,accountId:string,roomId:string,
+  requestId:string,action:SimAction
+){
+  if(!isRoomUuid(roomId))throw new Error("INVALID_ROOM");
+  if(!requestPattern.test(requestId))throw new Error("INVALID_REQUEST_ID");
+  if(!ACTIONS.has(action))throw new Error("INVALID_SIM_ACTION");
     const round=await lockedRound(tx,roomId);
     const players=await members(tx,round.roundId);
     const me=players.find(p=>p.accountId===accountId);
@@ -142,5 +153,4 @@ export async function performWagerSimulation(
         ${action},${revision})
     `;
     return {...simPublicView(next,me.seat),reused:false};
-  });
 }
