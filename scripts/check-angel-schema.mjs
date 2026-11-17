@@ -23,7 +23,7 @@ try {
                   'payments_enabled','settlement_enabled')
   `;
   const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
-  if (tables[0]?.total !== 18
+  if (tables[0]?.total !== 19
     || Number(map.deposit_fee_rate) !== 0
     || Number(map.withdrawal_fee_rate) !== 0
     || Number(map.pot_rake_rate) !== 0.03
@@ -102,9 +102,25 @@ try {
   if(Number(simTables[0]?.['n'])!==2 || Number(simMigration[0]?.['n'])!==1)
     throw new Error("WAGER_SIM_SCHEMA_MISSING");
   console.log("WAGER_SIM_SCHEMA_OK");
+  const settlementAudit=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0008_settlement_rollback_audit'
+  `;
+  const settlementReceipts=await db`
+    select count(*)::integer as n from public.angel_settlement_audit_receipts
+  `;
+  const settlementEvents=await db`
+    select count(*)::integer as n from public.angel_ledger_events
+    where event_type='STAGING_ROLLBACK_SETTLEMENT'
+  `;
+  if(Number(settlementAudit[0]?.['n'])!==1 ||
+     Number(settlementReceipts[0]?.['n'])!==0 ||
+     Number(settlementEvents[0]?.['n'])!==0)
+    throw new Error("SETTLEMENT_AUDIT_NOT_ROLLED_BACK");
+  console.log("SETTLEMENT_ROLLBACK_ONLY");
   console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
-  console.log("ANGEL_TABLE_COUNT=18");
+  console.log("ANGEL_TABLE_COUNT=19");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
 } catch(e) {
   console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
