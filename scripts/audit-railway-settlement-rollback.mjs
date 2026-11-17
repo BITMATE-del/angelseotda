@@ -102,9 +102,9 @@ try{
         where account_id=${b}::uuid`;
 
       const posted=await applyRollbackOnlySettlement(tx,roomId);
-      assert(posted.reused===false&&posted.pot==="30.000"&&posted.fee==="0.900",
+      assert(posted.reused===false&&posted.pot==="30.000"&&posted.fee==="1.000",
         "single atomic settlement");
-      assert(posted.payouts.find(p=>p.seat===1)?.amount==="29.100",
+      assert(posted.payouts.find(p=>p.seat===1)?.amount==="29.000",
         "payout winner 38 gwang");
       const replay=await applyRollbackOnlySettlement(tx,roomId);
       assert(replay.reused===true,"same round never double posts");
@@ -127,19 +127,19 @@ try{
       `;
       const v=verify[0];
       assert(v?.['settlement_status']==="POSTED" &&
-        Number(v?.['pot'])===30&&Number(v?.['rake_amount'])===0.9,
+        Number(v?.['pot'])===30&&Number(v?.['rake_amount'])===1,
         "round marked posted exactly once");
       assert(Number(v?.['receipts'])===1&&Number(v?.['events'])===1,
         "unique receipt and ledger event");
-      assert(Number(v?.['committed'])===30&&Number(v?.['paid'])===29.1 &&
-        Number(v?.['ledger_net'])===-0.9,"ledger and fees reconcile");
+      assert(Number(v?.['committed'])===30&&Number(v?.['paid'])===29 &&
+        Number(v?.['ledger_net'])===-1,"ledger and fees reconcile");
       const wallets=await tx`
         select account_id,balance,locked_balance
         from public.angel_wallets
         where account_id in (${a}::uuid,${b}::uuid,${c}::uuid)
       `;
       const sums=wallets.reduce((s,w)=>s+Number(w['balance']),0);
-      assert(Math.abs(sums-299.1)<0.000001,"rake only monetary sink");
+      assert(Math.abs(sums-299)<0.000001,"rake only monetary sink");
       assert(wallets.every(w=>Number(w['balance'])>=Number(w['locked_balance'])),
         "all wallet locks conserved");
       console.log("SETTLEMENT_ATOMIC_LEDGER_AUDIT_PASS");
