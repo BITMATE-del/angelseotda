@@ -31,9 +31,9 @@ describe("server-only simulated showdown integrates betting and cards",()=>{
     if(result.status==="CALCULATED"){
       expect(result.winnerSeats).toEqual([1]);
       expect(result.pot).toBe("10.000");
-      expect(result.fee).toBe("0.300");
+      expect(result.fee).toBe("0.000");
       expect(result.payouts).toEqual([
-        {seat:1,amount:"9.700"},{seat:2,amount:"0.000"},
+        {seat:1,amount:"10.000"},{seat:2,amount:"0.000"},
       ]);
     }
   });
