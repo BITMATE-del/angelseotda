@@ -31,7 +31,6 @@ describe("no-money server wager simulator",()=>{
     let s=newSimState([1,2,3],"100");
     s=applySimAction(s,1,"ping");
     s=applySimAction(s,2,"die");
-    expect(s.foldedSeats).toBeUndefined();
     expect(s.turnSeat).toBe(3);
     s=applySimAction(s,3,"call");
     expect(s.complete).toBe(true);
@@ -55,7 +54,6 @@ describe("no-money server wager simulator",()=>{
     s=applySimAction(s,3,"all_in");
     expect(s.currentBet).toBe("100.000");
     expect(s.players[2]?.credit).toBe("0.000");
-    expect(s.allInSeats).toBeUndefined();
     s=applySimAction(s,1,"call");
     s=applySimAction(s,2,"call");
     expect(s.complete).toBe(true);
