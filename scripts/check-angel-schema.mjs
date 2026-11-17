@@ -23,7 +23,7 @@ try {
                   'payments_enabled','settlement_enabled')
   `;
   const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
-  if (tables[0]?.total !== 16
+  if (tables[0]?.total !== 18
     || Number(map.deposit_fee_rate) !== 0
     || Number(map.withdrawal_fee_rate) !== 0
     || Number(map.pot_rake_rate) !== 0.03
@@ -90,9 +90,21 @@ try {
      Number(sequenceMigration[0]?.['n'])!==1)
     throw new Error("PREVIEW_TURN_SEQUENCE_MISSING");
   console.log("PREVIEW_TURN_SEQUENCE_OK");
+  const simTables=await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name in
+      ('angel_wager_simulations','angel_wager_sim_actions')
+  `;
+  const simMigration=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0007_wager_simulation'
+  `;
+  if(Number(simTables[0]?.['n'])!==2 || Number(simMigration[0]?.['n'])!==1)
+    throw new Error("WAGER_SIM_SCHEMA_MISSING");
+  console.log("WAGER_SIM_SCHEMA_OK");
   console.log("SANDBOX_BETTING_DISABLED");
   console.log("ANGEL_BASELINE_OK");
-  console.log("ANGEL_TABLE_COUNT=16");
+  console.log("ANGEL_TABLE_COUNT=18");
   console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
 } catch(e) {
   console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
