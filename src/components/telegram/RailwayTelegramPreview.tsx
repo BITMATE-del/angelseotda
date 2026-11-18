@@ -332,7 +332,7 @@ export function RailwayTelegramPreview() {
         {screen === "outside" && (
           <>
             <p className="text-sm">텔레그램 앱에서 엔젤섯다 미니앱으로 접속해 주세요.</p>
-            <a className="text-sm text-gold underline" href="https://t.me/angelsda_bot" rel="noopener noreferrer">
+            <a className="text-sm text-gold underline" href="https://t.me/angelseotda_bot" rel="noopener noreferrer">
               텔레그램 봇 열기
             </a>
           </>
