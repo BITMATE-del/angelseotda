@@ -10,6 +10,7 @@ const STAGING_ENDPOINTS = new Set([
   "/api/public/railway-auth",
   "/api/public/railway-rooms",
   "/api/public/railway-wallet",
+  "/api/public/railway-bot-webhook",
 ]);
 const STATIC_PREFIXES = ["/assets/","/_build/","/brand/","/cards/","/fonts/"];
 const STATIC_FILES = new Set(["/favicon.png","/robots.txt"]);
