@@ -1,0 +1,13 @@
+REVOKE EXECUTE ON FUNCTION public.test_driver_assert(uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.test_set_points(uuid, bigint) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.test_seed_round_cards(uuid, jsonb) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.test_log_sound_event(text, text, text, uuid, uuid, text) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.test_pot_report(text, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.ops_status() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.trg_round_finished_balance_eligibility() FROM anon, PUBLIC;
+GRANT EXECUTE ON FUNCTION public.test_driver_assert(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.test_set_points(uuid, bigint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.test_seed_round_cards(uuid, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.test_log_sound_event(text, text, text, uuid, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.test_pot_report(text, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ops_status() TO authenticated;

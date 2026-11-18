@@ -1,0 +1,146 @@
+/**
+ * Read-only validation for the ANGEL SUTDA isolated PostgreSQL baseline.
+ * Safe to run on every staging deployment.
+ */
+import postgres from "postgres";
+if (process.env.RAILWAY_ENVIRONMENT_NAME !== "staging"
+ || process.env.BACKEND_MODE !== "railway_postgres_staging"
+ || !process.env.DATABASE_URL) {
+  console.error("BASELINE_CHECK_REFUSED");
+  process.exit(1);
+}
+const db = postgres(process.env.DATABASE_URL, {max: 1, connect_timeout: 10, prepare: false});
+try {
+  const tables = await db`
+    select count(*)::integer as total
+    from information_schema.tables
+    where table_schema='public' and table_type='BASE TABLE'
+      and table_name like 'angel_%'
+  `;
+  const settings = await db`
+    select key, value from public.angel_app_settings
+    where key in ('deposit_fee_rate','withdrawal_fee_rate','pot_rake_rate',
+                  'payments_enabled','settlement_enabled')
+  `;
+  const map = Object.fromEntries(settings.map(s => [s.key,s.value]));
+  if (tables[0]?.total !== 20
+    || Number(map.deposit_fee_rate) !== 0
+    || Number(map.withdrawal_fee_rate) !== 0
+    || Number(map.pot_rake_rate) !== 0.03
+    || map.payments_enabled !== false
+    || map.settlement_enabled !== false) {
+    throw new Error("BASELINE_INVARIANT_FAILED");
+  }
+  const session = await db`
+    select version from public.angel_schema_migrations
+    where version='0002_telegram_sessions'
+  `;
+  if (session.length !== 1) throw new Error("SESSION_SCHEMA_NOT_APPLIED");
+  const privateSchema = await db`
+    select version from public.angel_schema_migrations
+    where version='0003_private_preview_deals'
+  `;
+  if (privateSchema.length !== 1) throw new Error("PRIVATE_DEALS_SCHEMA_NOT_APPLIED");
+  const privateTables = await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name in
+      ('angel_round_private_hands','angel_round_runtime')
+  `;
+  if (privateTables[0]?.['n'] !== 2) throw new Error("PRIVATE_TABLES_MISSING");
+  const receiptSchema = await db`
+    select version from public.angel_schema_migrations
+    where version='0004_sandbox_bet_receipts'
+  `;
+  const receiptTable = await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name='angel_bet_receipts'
+  `;
+  if (receiptSchema.length!==1 || receiptTable[0]?.['n']!==1)
+    throw new Error("SANDBOX_RECEIPT_SCHEMA_MISSING");
+  const unsafeRuntime=await db`
+    select count(*)::integer as n from public.angel_round_runtime
+    where accepts_bets=true
+  `;
+  const unsafeReceipt=await db`
+    select count(*)::integer as n from public.angel_bet_receipts
+    where action<>'SANDBOX_DEBIT'
+  `;
+  if(Number(unsafeRuntime[0]?.['n'])!==0 || Number(unsafeReceipt[0]?.['n'])!==0)
+    throw new Error("UNSAFE_BETTING_ENABLED");
+  const choices=await db`
+    select version from public.angel_schema_migrations
+    where version='0005_final_hand_selections'
+  `;
+  const choiceTable=await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name='angel_round_final_selections'
+  `;
+  if(choices.length!==1 || choiceTable[0]?.['n']!==1)
+    throw new Error("FINAL_CHOICES_SCHEMA_MISSING");
+  const actionSequence = await db`
+    select count(*)::integer as n from information_schema.columns
+    where table_schema='public' and table_name='angel_game_actions'
+      and column_name='action_index'
+  `;
+  const sequenceMigration = await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0006_preview_turn_sequence'
+  `;
+  if(Number(actionSequence[0]?.['n'])!==1 ||
+     Number(sequenceMigration[0]?.['n'])!==1)
+    throw new Error("PREVIEW_TURN_SEQUENCE_MISSING");
+  console.log("PREVIEW_TURN_SEQUENCE_OK");
+  const simTables=await db`
+    select count(*)::integer as n from information_schema.tables
+    where table_schema='public' and table_name in
+      ('angel_wager_simulations','angel_wager_sim_actions')
+  `;
+  const simMigration=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0007_wager_simulation'
+  `;
+  if(Number(simTables[0]?.['n'])!==2 || Number(simMigration[0]?.['n'])!==1)
+    throw new Error("WAGER_SIM_SCHEMA_MISSING");
+  console.log("WAGER_SIM_SCHEMA_OK");
+  const settlementAudit=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0008_settlement_rollback_audit'
+  `;
+  const settlementReceipts=await db`
+    select count(*)::integer as n from public.angel_settlement_audit_receipts
+  `;
+  const settlementEvents=await db`
+    select count(*)::integer as n from public.angel_ledger_events
+    where event_type='STAGING_ROLLBACK_SETTLEMENT'
+  `;
+  if(Number(settlementAudit[0]?.['n'])!==1 ||
+     Number(settlementReceipts[0]?.['n'])!==0 ||
+     Number(settlementEvents[0]?.['n'])!==0)
+    throw new Error("SETTLEMENT_AUDIT_NOT_ROLLED_BACK");
+  console.log("SETTLEMENT_ROLLBACK_ONLY");
+  const escrowMigration=await db`
+    select count(*)::integer as n from public.angel_schema_migrations
+    where version='0009_ttaeng_rollback_audit'
+  `;
+  const escrowCount=await db`
+    select count(*)::integer as n from public.angel_ttaeng_audit_escrows
+  `;
+  const escrowLedger=await db`
+    select count(*)::integer as n from public.angel_ledger_events
+    where event_type='STAGING_TTAENG_AUDIT'
+  `;
+  if(Number(escrowMigration[0]?.['n'])!==1 ||
+     Number(escrowCount[0]?.['n'])!==0 ||
+     Number(escrowLedger[0]?.['n'])!==0)
+    throw new Error("TTAENG_AUDIT_RESIDUE_FOUND");
+  console.log("TTAENG_ROLLBACK_ONLY");
+  console.log("SANDBOX_BETTING_DISABLED");
+  console.log("ANGEL_BASELINE_OK");
+  console.log("ANGEL_TABLE_COUNT=20");
+  console.log("PAYMENTS_AND_SETTLEMENT_DISABLED");
+} catch(e) {
+  console.error("ANGEL_BASELINE_FAILED", e instanceof Error ? e.message : "UnknownError");
+  process.exitCode=1;
+} finally {
+  await db.end({ timeout: 5 });
+}

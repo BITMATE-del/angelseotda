@@ -1,0 +1,11 @@
+REVOKE ALL ON FUNCTION public.has_role(uuid, public.app_role) FROM anon, authenticated, public;
+REVOKE ALL ON FUNCTION public.is_admin(uuid) FROM anon, authenticated, public;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM anon, authenticated, public;
+REVOKE ALL ON FUNCTION public.request_withdrawal(bigint,text,jsonb,text) FROM anon, public;
+REVOKE ALL ON FUNCTION public.admin_process_charge(uuid,text,text) FROM anon, public;
+REVOKE ALL ON FUNCTION public.admin_process_withdrawal(uuid,text,text) FROM anon, public;
+REVOKE ALL ON FUNCTION public.admin_adjust_points(uuid,bigint,text) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.request_withdrawal(bigint,text,jsonb,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_process_charge(uuid,text,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_process_withdrawal(uuid,text,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_adjust_points(uuid,bigint,text) TO authenticated;

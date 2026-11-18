@@ -1,0 +1,11 @@
+{
+  "base_pack": "ANGEL_SUTDA_2CARD_UI_ASSETS",
+  "design_change": false,
+  "change": "card capacity only: 2 -> 3",
+  "new_files": [
+    "sutda_seat_self_3card.png",
+    "sutda_seat_opponent_3card.png",
+    "sutda_seat_empty_3card.png"
+  ],
+  "existing_card_assets": "preserve current in-game Sutda card assets"
+}

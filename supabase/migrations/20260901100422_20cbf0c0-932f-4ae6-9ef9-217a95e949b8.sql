@@ -1,0 +1,27 @@
+REVOKE ALL ON FUNCTION public.admin_finalize_weekly_season(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_pay_weekly_rewards(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_recalc_weekly_season(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.cancel_my_charge_request(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.claim_daily_attendance() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.ensure_weekly_season() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.evaluate_member_rank(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.grant_points_internal(uuid,bigint,text,text,text,uuid,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.request_charge_with_ticket(numeric, text, text, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.sync_my_rank() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.weekly_deposit_ranking(uuid, integer) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.weekly_gwang_ranking(uuid, integer) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.weekly_profit_ranking(uuid, integer) FROM PUBLIC, anon;
+
+GRANT EXECUTE ON FUNCTION public.admin_finalize_weekly_season(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_pay_weekly_rewards(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_recalc_weekly_season(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_my_charge_request(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_daily_attendance() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ensure_weekly_season() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.request_charge_with_ticket(numeric, text, text, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_my_rank() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.weekly_deposit_ranking(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.weekly_gwang_ranking(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.weekly_profit_ranking(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.evaluate_member_rank(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.grant_points_internal(uuid,bigint,text,text,text,uuid,uuid) TO service_role;

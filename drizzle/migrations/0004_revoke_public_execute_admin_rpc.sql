@@ -1,0 +1,16 @@
+REVOKE EXECUTE ON FUNCTION public.admin_abandoned_rounds(integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_cancel_abandoned_round(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_release_closed_room_seats() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_set_affiliate_rebate_rate(uuid, numeric, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_disable_custom_title(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_list_custom_titles(text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_set_permissions(uuid, text[], text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_set_role(uuid, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_abandoned_rounds(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_cancel_abandoned_round(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_release_closed_room_seats() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_set_affiliate_rebate_rate(uuid, numeric, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_disable_custom_title(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_custom_titles(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_set_permissions(uuid, text[], text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_set_role(uuid, text, text) TO authenticated;

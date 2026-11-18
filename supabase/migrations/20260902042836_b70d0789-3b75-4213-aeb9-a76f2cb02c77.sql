@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.bump_round_activity() FROM PUBLIC, anon, authenticated;

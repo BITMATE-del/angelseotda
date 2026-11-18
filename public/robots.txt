@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /rooms
+Allow: /dori
+Allow: /notices
+Allow: /ranking
+Allow: /shop
+Disallow: /admin
+Disallow: /admin/
+Disallow: /wallet
+Disallow: /affiliate
+Disallow: /auth
+Disallow: /game/
+Disallow: /dori/game/
+Disallow: /api/
+
+Sitemap: https://angel-sd.com/sitemap.xml

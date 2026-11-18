@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360" width="240" height="360" role="img">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6efdf"/>
+      <stop offset="1" stop-color="#e9dcc0"/>
+    </linearGradient>
+    <clipPath id="clip"><rect x="8" y="8" width="224" height="344" rx="16"/></clipPath>
+  </defs>
+  <rect x="2" y="2" width="236" height="356" rx="20" fill="#151312"/>
+  <rect x="8" y="8" width="224" height="344" rx="16" fill="url(#paper)"/>
+  <g clip-path="url(#clip)"><path d="M20 330 C 70 300, 90 250, 96 190 C 100 140, 130 100, 168 76" fill="none" stroke="#4a3020" stroke-width="10" stroke-linecap="round"/>
+        <ellipse cx="78.0" cy="123.9" rx="14.3" ry="16.1" fill="#f6c9d4" transform="rotate(0.0 78.0 123.9)"/><ellipse cx="93.3" cy="135.0" rx="14.3" ry="16.1" fill="#f6c9d4" transform="rotate(72.0 93.3 135.0)"/><ellipse cx="87.5" cy="153.0" rx="14.3" ry="16.1" fill="#f6c9d4" transform="rotate(144.0 87.5 153.0)"/><ellipse cx="68.5" cy="153.0" rx="14.3" ry="16.1" fill="#f6c9d4" transform="rotate(216.0 68.5 153.0)"/><ellipse cx="62.7" cy="135.0" rx="14.3" ry="16.1" fill="#f6c9d4" transform="rotate(288.0 62.7 135.0)"/><circle cx="78" cy="140" r="7.8" fill="#cf1f24"/><ellipse cx="150.0" cy="89.1" rx="13.2" ry="14.9" fill="#f6c9d4" transform="rotate(0.0 150.0 89.1)"/><ellipse cx="164.2" cy="99.4" rx="13.2" ry="14.9" fill="#f6c9d4" transform="rotate(72.0 164.2 99.4)"/><ellipse cx="158.7" cy="116.0" rx="13.2" ry="14.9" fill="#f6c9d4" transform="rotate(144.0 158.7 116.0)"/><ellipse cx="141.3" cy="116.0" rx="13.2" ry="14.9" fill="#f6c9d4" transform="rotate(216.0 141.3 116.0)"/><ellipse cx="135.8" cy="99.4" rx="13.2" ry="14.9" fill="#f6c9d4" transform="rotate(288.0 135.8 99.4)"/><circle cx="150" cy="104" r="7.2" fill="#cf1f24"/>
+        <ellipse cx="60.0" cy="200.4" rx="12.1" ry="13.6" fill="#fbf8f1" transform="rotate(0.0 60.0 200.4)"/><ellipse cx="73.0" cy="209.8" rx="12.1" ry="13.6" fill="#fbf8f1" transform="rotate(72.0 73.0 209.8)"/><ellipse cx="68.0" cy="225.0" rx="12.1" ry="13.6" fill="#fbf8f1" transform="rotate(144.0 68.0 225.0)"/><ellipse cx="52.0" cy="225.0" rx="12.1" ry="13.6" fill="#fbf8f1" transform="rotate(216.0 52.0 225.0)"/><ellipse cx="47.0" cy="209.8" rx="12.1" ry="13.6" fill="#fbf8f1" transform="rotate(288.0 47.0 209.8)"/><circle cx="60" cy="214" r="6.6" fill="#cf1f24"/><ellipse cx="180.0" cy="163.6" rx="11.0" ry="12.4" fill="#f6c9d4" transform="rotate(0.0 180.0 163.6)"/><ellipse cx="191.8" cy="172.2" rx="11.0" ry="12.4" fill="#f6c9d4" transform="rotate(72.0 191.8 172.2)"/><ellipse cx="187.3" cy="186.0" rx="11.0" ry="12.4" fill="#f6c9d4" transform="rotate(144.0 187.3 186.0)"/><ellipse cx="172.7" cy="186.0" rx="11.0" ry="12.4" fill="#f6c9d4" transform="rotate(216.0 172.7 186.0)"/><ellipse cx="168.2" cy="172.2" rx="11.0" ry="12.4" fill="#f6c9d4" transform="rotate(288.0 168.2 172.2)"/><circle cx="180" cy="176" r="6.0" fill="#cf1f24"/>
+        <g>
+    <rect x="40" y="120" width="160" height="42" rx="6" fill="#cf1f24"/>
+    <rect x="46" y="126" width="148" height="30" rx="4" fill="none" stroke="#fbf8f1" stroke-opacity="0.5"/>
+    <text x="120" y="152" font-family="'Noto Serif KR',serif" font-size="24" fill="#fbf8f1" text-anchor="middle">만막</text>
+  </g>
+  <g>
+    <rect x="150" y="238" width="66" height="86" rx="6" fill="#8f1418"/>
+    <rect x="155" y="243" width="56" height="76" rx="4" fill="none" stroke="#e8b93a" stroke-width="2"/>
+    <text x="183" y="296" font-family="'Noto Serif KR',serif" font-size="46" font-weight="700" fill="#fbf8f1" text-anchor="middle">광</text>
+  </g></g>
+  <rect x="8" y="8" width="224" height="344" rx="16" fill="none" stroke="#151312" stroke-width="4"/>
+  <rect x="16" y="16" width="208" height="328" rx="10" fill="none" stroke="#151312" stroke-opacity="0.35" stroke-width="1.5"/>
+</svg>
