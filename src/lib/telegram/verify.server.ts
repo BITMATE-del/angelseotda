@@ -16,6 +16,16 @@ export interface VerifiedTelegramUser {
   auth_date: number;
 }
 
+function getEffectiveTelegramBotId(): number {
+  if (process.env["RAILWAY_ENVIRONMENT_NAME"] !== "staging"
+    || process.env["BACKEND_MODE"] !== "railway_postgres_staging") return TELEGRAM_BOT_ID;
+  const botToken = process.env["ANGEL_TELEGRAM_BOT_TOKEN"];
+  if (!botToken || !/^\d+:[A-Za-z0-9_-]+$/.test(botToken)) throw new Error("TG_BOT_NOT_CONFIGURED");
+  const botId = Number(botToken.split(":")[0]);
+  if (!Number.isSafeInteger(botId) || botId <= 0) throw new Error("TG_BOT_NOT_CONFIGURED");
+  return botId;
+}
+
 function hexToBytes(hex: string) {
   const out = new Uint8Array(hex.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
@@ -38,7 +48,7 @@ export async function verifyTelegramInitData(initData: string): Promise<Verified
     if (k !== "hash" && k !== "signature") pairs.push(`${k}=${v}`);
   });
   pairs.sort();
-  const checkString = `${TELEGRAM_BOT_ID}:WebAppData\n${pairs.join("\n")}`;
+  const checkString = `${getEffectiveTelegramBotId()}:WebAppData\n${pairs.join("\n")}`;
 
   const key = await crypto.subtle.importKey(
     "raw",
